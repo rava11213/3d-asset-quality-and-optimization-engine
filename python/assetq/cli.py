@@ -85,6 +85,8 @@ def main():
     evaluation.add_argument("--samples", type=int, default=100000, help="Samples per direction (default: 100000)")
     evaluation.add_argument("--seed", type=int, default=42)
     evaluation.add_argument("--device", default="cpu", help="Warp device, e.g. cpu or cuda:0")
+    evaluation.add_argument("--feature-samples",type=int,default=0)
+    evaluation.add_argument("--feature-angle",type=float,default=45)
     benchmark = sub.add_parser("benchmark", help="Run asset/budget/seed experiments and plot tradeoffs")
     benchmark.add_argument("inputs", type=Path, nargs="+")
     benchmark.add_argument("--output-dir", type=Path, required=True, help="New or empty directory")
@@ -95,6 +97,10 @@ def main():
     benchmark.add_argument("--max-p95", type=float, help="Max worst-direction P95 as a fraction of original diagonal")
     benchmark.add_argument("--binary", type=Path, help="Path to assetq-simplify")
     benchmark.add_argument("--inspector", type=Path)
+    benchmark.add_argument("--methods",nargs="+",choices=["standard","constraints","feature","fast"],default=["standard"])
+    benchmark.add_argument("--feature-angle",type=float,default=45)
+    benchmark.add_argument("--feature-weight",type=float,default=10)
+    benchmark.add_argument("--feature-samples",type=int,default=2000)
     args = parser.parse_args()
     if args.command == "benchmark":
         try:

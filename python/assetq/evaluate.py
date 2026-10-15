@@ -46,7 +46,7 @@ def load_obj(path):
     return v, f
 
 
-def sample_surface(vertices, faces, count, rng):
+def sample_surface(vertices, faces, count, rng, return_faces=False):
     triangles = vertices[faces]
     areas = np.linalg.norm(np.cross(triangles[:,1]-triangles[:,0], triangles[:,2]-triangles[:,0]), axis=1)
     indices = rng.choice(len(faces), size=count, p=areas/areas.sum())
@@ -54,7 +54,8 @@ def sample_surface(vertices, faces, count, rng):
     # sqrt maps two uniform random variables to uniform triangle area.
     r = np.sqrt(rng.random(count))
     s = rng.random(count)
-    return ((1-r)[:,None]*chosen[:,0] + (r*(1-s))[:,None]*chosen[:,1] + (r*s)[:,None]*chosen[:,2])
+    points = ((1-r)[:,None]*chosen[:,0] + (r*(1-s))[:,None]*chosen[:,1] + (r*s)[:,None]*chosen[:,2])
+    return (points,indices) if return_faces else points
 
 
 def statistics(values):
@@ -63,10 +64,13 @@ def statistics(values):
             "sampled_max": float(np.max(values))}
 
 
-def evaluate(original, simplified, samples=100000, seed=42, device="cpu"):
+def evaluate(original, simplified, samples=100000, seed=42, device="cpu", feature_samples=0, feature_angle=45):
     if samples < 1 or seed < 0:
         raise ValueError("Samples must be positive and seed nonnegative")
+    if feature_samples<0:
+        raise ValueError("Feature sample count must be nonnegative")
     from .warp_distance import distances, wp
+    from .feature_metrics import face_normals, feature_errors
     start = time.perf_counter()
     original, simplified = Path(original), Path(simplified)
     ov, of = load_obj(original)
@@ -78,10 +82,15 @@ def evaluate(original, simplified, samples=100000, seed=42, device="cpu"):
     # Never independently normalize candidates: displacement and scale changes
     # must count as error. Use identical original samples for every budget.
     a, b = np.random.SeedSequence(seed).spawn(2)
-    op = sample_surface(ov, of, samples, np.random.default_rng(a))
-    sp = sample_surface(sv, sf, samples, np.random.default_rng(b))
-    forward = distances(op, sv, sf, device)
-    reverse = distances(sp, ov, of, device)
+    op,oi = sample_surface(ov, of, samples, np.random.default_rng(a),True)
+    sp,si = sample_surface(sv, sf, samples, np.random.default_rng(b),True)
+    forward,near_s = distances(op, sv, sf, device,return_faces=True)
+    reverse,near_o = distances(sp, ov, of, device,return_faces=True)
+    on,sn = face_normals(ov,of),face_normals(sv,sf)
+    def normal_stats(a,b):
+        return statistics(np.rad2deg(np.arccos(np.clip(np.sum(a*b,axis=1),-1,1))))
+    normals = {"original_to_simplified":normal_stats(on[oi],sn[near_s]),
+               "simplified_to_original":normal_stats(sn[si],on[near_o])}
     distributions = {"original_to_simplified": forward, "simplified_to_original": reverse,
                      "symmetric_pooled": np.concatenate([forward,reverse])}
     normalized = {key: statistics(v) for key,v in distributions.items()}
@@ -89,13 +98,16 @@ def evaluate(original, simplified, samples=100000, seed=42, device="cpu"):
     def source(path, faces):
         return {"path": str(path.resolve()), "sha256": hashlib.sha256(path.read_bytes()).hexdigest(),
                 "triangles": len(faces), "file_size_bytes": path.stat().st_size}
-    return {"schema_version": 1, "backend": "nvidia_warp", "warp_version": wp.__version__,
+    return {"schema_version": 2, "backend": "nvidia_warp", "warp_version": wp.__version__,
             "numpy_version": np.__version__, "device": str(wp.get_device(device)),
             "samples_per_direction": samples, "seed": seed, "sampling": "area_weighted_uniform",
             "percentile_method": "linear", "distance": "unsigned_point_to_triangle_surface",
             "original": source(original,of), "simplified": source(simplified,sf),
             "original_bounding_box_diagonal": diagonal, "normalization_center": center.tolist(),
             "normalized": normalized, "original_units": raw,
+            "normal_deviation_degrees":normals,
+            "worst_direction_normal_p95_degrees":max(s["p95"] for s in normals.values()),
+            "feature_metrics":feature_errors(ov,of,sv,sf,feature_samples,seed,feature_angle) if feature_samples else None,
             "worst_direction_p95_normalized": max(normalized[k]["p95"] for k in ("original_to_simplified","simplified_to_original")),
             "elapsed_seconds": time.perf_counter()-start,
             "limitations": ["Sampled estimates; sampled_max is not exact Hausdorff distance",
@@ -106,7 +118,7 @@ def run_cli(args):
     sources = [args.original, *args.simplified]
     if any(args.report.resolve() == p.resolve() or (args.report.exists() and args.report.samefile(p)) for p in sources):
         raise ValueError("Report path must differ from all input meshes")
-    reports = [evaluate(args.original,p,args.samples,args.seed,args.device) for p in args.simplified]
+    reports = [evaluate(args.original,p,args.samples,args.seed,args.device,args.feature_samples,args.feature_angle) for p in args.simplified]
     report = {"schema_version": 1, "evaluations": reports}
     args.report.parent.mkdir(parents=True, exist_ok=True)
     args.report.write_text(json.dumps(report, indent=2, allow_nan=False)+"\n")

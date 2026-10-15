@@ -193,5 +193,90 @@ crease count, and protected-corner count. Feature-specific tests cover detection
 corner positions, valid topology, no-feature behavior, thresholds, zero weight,
 determinism, and invalid options. These establish behavior, not superior quality.
 
-The `benchmark` command currently uses standard QEM. Multi-method comparisons and
-normal/feature metrics are planned extensions.
+The `benchmark` command defaults to standard QEM; use the comparison options below
+to evaluate alternative policies.
+
+## Controlled method comparisons
+
+```sh
+PYTHONPATH=python .venv/bin/python -m assetq benchmark outputs/sample-model/armadillo.obj outputs/comparison-inputs/rippled-box.obj outputs/qem-demo/original.obj --output-dir outputs/new-comparison --methods standard constraints feature --retain 0.75 0.5 0.25 --samples 100000 --feature-samples 2000 --seeds 42 43
+```
+
+Methods are `standard` (original QEM), `constraints` (feature graph, corner locks,
+and segment constraints with **zero** extra feature-plane penalty), `feature`
+(same constraints with `--feature-weight`, default 10), and `fast` (optional
+external reference). `--feature-angle` defaults to 45 degrees for both optimizer
+classification and feature evaluation; using one shared threshold keeps the
+definition consistent across methods. Each method/budget starts from the original.
+Per-method subdirectories prevent report/export collisions. JSON schema version 2
+and CSV include method labels so methods are never pooled together.
+
+Generate the deterministic curved mechanical test shape before using that input:
+
+```sh
+PYTHONPATH=python .venv/bin/python -m assetq.examples outputs/comparison-inputs/rippled-box.obj --subdivisions 12
+```
+
+New evaluation metrics:
+
+- **Normal deviation:** oriented geometric triangle normals at sampled source
+  positions versus the closest target triangle's normal. Reports directional
+  mean/RMS/P95/P99/maximum in degrees and the larger directional P95. Angles range
+  from 0 to 180; reversed winding is penalized. At creases, ties between equally
+  close target faces can affect the normal score. This is nearest-surface normal
+  disagreement, not tracked material-point correspondence or shading-normal error.
+- **Crease distance:** independently detect interior dihedral creases on original
+  and candidate, sample each network uniformly by edge length, and compute nearest
+  point-to-segment distances in both directions. Results are normalized by original
+  diagonal. The search uses bounded-memory NumPy batches, independent of Warp's
+  triangle queries. Original boundaries are excluded. Default 2,000 samples per
+  direction; `--feature-samples 0` disables it. Sampling estimates do not guarantee
+  coverage of tiny features or semantic correspondence between unrelated creases.
+- **Missing features:** no original/candidate creases gives `not_applicable`;
+  original-only creases gives `missing_candidate_features`; candidate-only creases
+  gives `introduced_candidate_features`. Distances are null/N/A in these cases,
+  never a misleading zero. Original and candidate crease counts and lengths are
+  retained in the full evaluation JSON. A distance score alone cannot establish
+  feature topology preservation.
+
+Standalone `evaluate` accepts `--feature-samples` and `--feature-angle` too; normals
+are always measured. The original random surface samples are unchanged by enabling
+these metrics. New `method-comparison.png`/`.svg` plots show surface, normal, and
+crease errors per asset. All reported budget summaries use the maximum across
+requested seeds for P95. Missing feature metrics are omitted from plot curves and
+explicitly flagged in tables.
+
+`benchmark.json` includes comparisons against standard QEM **only when achieved
+counts match exactly and every requested seed completed**. Mismatched comparisons
+retain their counts but numerical deltas are null; there is no interpolation,
+automatic count reconciliation, or claim of improvement at mismatched budgets.
+Negative deltas favor the alternative. Differences near the float32 numerical
+floor should be treated as ties. No single overall winner is inferred: surface,
+normal, and crease scores may disagree. Threshold selection still uses surface
+P95 only and selects across all tested methods when more than one is requested.
+Candidate inspection defects are also included in CSV; low distance alone does
+not certify valid topology.
+
+### External reference
+
+Install the optional [fast-simplification](https://github.com/pyvista/fast-simplification)
+adapter dependency:
+
+```sh
+.venv/bin/python -m pip install -e '.[comparison]'
+```
+
+Then include `fast` in `--methods`. The isolated adapter calls the library's
+`simplify(..., target_count=..., agg=7.0)` after the same centering/scaling used
+locally, restores coordinates, and records library version/parameters. It uses
+the reference's own boundary/topology policy, which is not identical to ours.
+Reference timing covers the Python library call; local timing also includes our
+validation/initialization/compaction. These are not controlled speed comparisons.
+The library can overshoot or fail to meet budgets; actual counts remain decisive.
+Failed reference runs are recorded and other methods continue. No substitute
+result is invented when the dependency is unavailable.
+
+The reference dependency could not be downloaded in the current development
+session due to restricted package-index access. Its adapter is implemented but
+not yet validated against an installed external library; the published experiment
+compares the three local methods only. External superiority is not established.

@@ -71,6 +71,31 @@ class BenchmarkTests(unittest.TestCase):
         self.assertIn("new or empty",result.stderr)
         self.assertEqual(sentinel.read_text(),"keep")
 
+    def test_multi_method_ablation_records_options_and_metrics(self):
+        result = self.run_command("--methods","standard","constraints","feature","--feature-angle","100","--feature-samples","100")
+        self.assertEqual(result.returncode,0,result.stderr)
+        report = json.loads((self.output/"benchmark.json").read_text())
+        self.assertEqual(len(report["rows"]),6)
+        self.assertEqual({p["method"] for p in report["points"]},{"standard","constraints","feature"})
+        for p in report["points"]:
+            self.assertTrue(p["complete"])
+        for row in report["rows"]:
+            self.assertIn("normal_p95_degrees",row)
+            self.assertEqual(row["feature_status"],"not_applicable")
+            optimization = json.loads(Path(row["optimization_report"]).read_text())
+            if row["method"]=="constraints":
+                self.assertEqual(optimization["feature_weight"],0)
+        self.assertTrue(all(c["matched_complete"] for c in report["comparisons"]))
+        self.assertTrue((self.output/"method-comparison.png").is_file())
+
+    @unittest.skipIf(importlib.util.find_spec("fast_simplification"),"Reference installed; missing-dependency check not applicable")
+    def test_unavailable_external_method_is_a_failure_not_a_fake_result(self):
+        result = self.run_command("--methods","standard","fast","--feature-samples","0")
+        self.assertEqual(result.returncode,1,result.stderr)
+        report = json.loads((self.output/"benchmark.json").read_text())
+        self.assertEqual({r["method"] for r in report["rows"]},{"standard"})
+        self.assertEqual(report["failures"][0]["method"],"fast")
+
     def test_selection_requires_all_seeds_and_uses_achieved_count(self):
         from assetq.benchmark import summarize,select_versions
         rows = []

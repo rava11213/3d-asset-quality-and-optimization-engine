@@ -12,6 +12,7 @@ dependencies = []
 [project.optional-dependencies]
 evaluation = ["numpy>=1.24", "warp-lang>=1.10,<2"]
 benchmark = ["numpy>=1.24", "warp-lang>=1.10,<2", "matplotlib>=3.8,<4"]
+comparison = ["numpy>=1.24", "warp-lang>=1.10,<2", "matplotlib>=3.8,<4", "fast-simplification>=0.1.10,<0.3"]
 
 [project.scripts]
 assetq = "assetq.cli:main"
