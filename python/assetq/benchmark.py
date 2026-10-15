@@ -170,6 +170,8 @@ def write_report(output, report):
 
 
 def run_benchmark(args, binary, inspector):
+    if not math.isfinite(args.curvature_strength) or not 0<=args.curvature_strength<=1000:
+        raise ValueError("Curvature strength must be finite and in [0,1000]")
     if not math.isfinite(args.feature_angle) or not 0<args.feature_angle<180 or args.feature_samples<0:
         raise ValueError("Feature angle must be in (0,180) and sample count nonnegative")
     if not math.isfinite(args.feature_weight) or not 0<=args.feature_weight<=1e6:
@@ -191,7 +193,7 @@ def run_benchmark(args, binary, inspector):
     report = {"schema_version":2,"started_utc":datetime.now(timezone.utc).isoformat(),
               "status":"running","config":{"retain":args.retain,"samples_per_direction":args.samples,
               "seeds":seeds,"device":args.device,"max_p95":args.max_p95,
-              "methods":args.methods,"feature_angle":args.feature_angle,"feature_weight":args.feature_weight,
+              "methods":args.methods,"feature_angle":args.feature_angle,"feature_weight":args.feature_weight,"curvature_strength":args.curvature_strength,
               "feature_samples":args.feature_samples,"selection_metric":"max_over_seeds_of_worst_direction_p95_normalized"},
               "environment":{"python":platform.python_version(),"platform":platform.platform(),
               "matplotlib":matplotlib.__version__},
@@ -228,8 +230,9 @@ def run_benchmark(args, binary, inspector):
                         command=[sys.executable,"-m","assetq.external",source,target,mesh,optimization_path]
                     else:
                         command=[binary,source,"--target",target,"--export",mesh,"--report",optimization_path,
-                                 "--method","standard" if method=="standard" else "feature",
-                                 "--feature-angle",args.feature_angle,"--feature-weight",0 if method=="constraints" else args.feature_weight]
+                                 "--method","feature" if method=="constraints" else method,
+                                 "--feature-angle",args.feature_angle,"--feature-weight",0 if method=="constraints" else args.feature_weight,
+                                 "--curvature-strength",args.curvature_strength]
                     invoke(command,directory/f"simplify-{target}-log.json")
                     optimization = json.loads(optimization_path.read_text())
                     invoke([inspector,mesh,"--report",directory/f"inspection-{target}.json"],directory/f"inspect-{target}-log.json")

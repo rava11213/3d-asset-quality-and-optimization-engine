@@ -28,15 +28,42 @@ def rippled_box(n=12):
     return vertices,faces
 
 
+def bumped_sphere(levels=4):
+    """Closed smooth surface with two localized radial bumps; no semantic creases."""
+    vertices=[(1.,0.,0.),(-1.,0.,0.),(0.,1.,0.),(0.,-1.,0.),(0.,0.,1.),(0.,0.,-1.)]
+    faces=[(0,2,4),(2,1,4),(1,3,4),(3,0,4),(2,0,5),(1,2,5),(3,1,5),(0,3,5)]
+    for _ in range(levels):
+        cache={}
+        def midpoint(a,b):
+            key=tuple(sorted((a,b)))
+            if key not in cache:
+                p=tuple((vertices[a][k]+vertices[b][k])/2 for k in range(3))
+                norm=math.sqrt(sum(x*x for x in p))
+                cache[key]=len(vertices)
+                vertices.append(tuple(x/norm for x in p))
+            return cache[key]
+        refined=[]
+        for a,b,c in faces:
+            ab,bc,ca=midpoint(a,b),midpoint(b,c),midpoint(c,a)
+            refined.extend([(a,ab,ca),(ab,b,bc),(ca,bc,c),(ab,bc,ca)])
+        faces=refined
+    deformed=[]
+    for x,y,z in vertices:
+        radius=1+.25*math.exp(-18*(1-x))+.15*math.exp(-28*(1-y))
+        deformed.append((x*radius,y*radius,z*radius))
+    return deformed,faces
+
+
 if __name__=="__main__":
     parser=argparse.ArgumentParser(description=__doc__)
     parser.add_argument("output",type=Path)
     parser.add_argument("--subdivisions",type=int,default=12)
+    parser.add_argument("--shape",choices=["rippled-box","bumped-sphere"],default="rippled-box")
     args=parser.parse_args()
-    v,f=rippled_box(args.subdivisions)
+    v,f=rippled_box(args.subdivisions) if args.shape=="rippled-box" else bumped_sphere()
     args.output.parent.mkdir(parents=True,exist_ok=True)
     with args.output.open("w") as stream:
-        stream.write("# Procedural rippled box; assetq.examples\n")
+        stream.write(f"# Procedural {args.shape}; assetq.examples\n")
         for p in v:
             stream.write("v "+" ".join(format(x,".17g") for x in p)+"\n")
         for t in f:

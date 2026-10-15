@@ -45,7 +45,8 @@ def simplify(args, parser):
         exported = args.output_dir / f"mesh-{target}.obj"
         report_path = args.output_dir / f"mesh-{target}.json"
         result = subprocess.run([binary, str(args.input), "--target", str(target), "--export", str(exported), "--report", str(report_path),
-                                 "--method",args.method,"--feature-angle",str(args.feature_angle),"--feature-weight",str(args.feature_weight)], capture_output=True, text=True)
+                                 "--method",args.method,"--feature-angle",str(args.feature_angle),"--feature-weight",str(args.feature_weight),
+                                 "--curvature-strength",str(args.curvature_strength)], capture_output=True, text=True)
         if result.returncode:
             print(result.stderr.strip(), file=sys.stderr)
             return result.returncode
@@ -75,7 +76,8 @@ def main():
     optimize.add_argument("--retain", type=float, nargs="+", default=[0.75, 0.5, 0.25])
     optimize.add_argument("--binary", type=Path, help="Path to assetq-simplify")
     optimize.add_argument("--inspector", type=Path, help="Path to assetq-inspect")
-    optimize.add_argument("--method", choices=["standard","feature"], default="standard")
+    optimize.add_argument("--method", choices=["standard","feature","curvature","combined"], default="standard")
+    optimize.add_argument("--curvature-strength",type=float,default=4)
     optimize.add_argument("--feature-angle", type=float, default=45, help="Original dihedral crease threshold in degrees")
     optimize.add_argument("--feature-weight", type=float, default=10, help="Additional crease-plane quadric weight")
     evaluation = sub.add_parser("evaluate", help="Measure bidirectional surface distances using NVIDIA Warp")
@@ -97,7 +99,8 @@ def main():
     benchmark.add_argument("--max-p95", type=float, help="Max worst-direction P95 as a fraction of original diagonal")
     benchmark.add_argument("--binary", type=Path, help="Path to assetq-simplify")
     benchmark.add_argument("--inspector", type=Path)
-    benchmark.add_argument("--methods",nargs="+",choices=["standard","constraints","feature","fast"],default=["standard"])
+    benchmark.add_argument("--methods",nargs="+",choices=["standard","constraints","feature","curvature","combined","fast"],default=["standard"])
+    benchmark.add_argument("--curvature-strength",type=float,default=4)
     benchmark.add_argument("--feature-angle",type=float,default=45)
     benchmark.add_argument("--feature-weight",type=float,default=10)
     benchmark.add_argument("--feature-samples",type=int,default=2000)

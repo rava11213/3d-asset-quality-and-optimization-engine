@@ -88,6 +88,17 @@ class BenchmarkTests(unittest.TestCase):
         self.assertTrue(all(c["matched_complete"] for c in report["comparisons"]))
         self.assertTrue((self.output/"method-comparison.png").is_file())
 
+    def test_curvature_method_configuration_and_zero_strength(self):
+        result=self.run_command("--methods","standard","feature","curvature","combined","--curvature-strength","0","--feature-samples","0")
+        self.assertEqual(result.returncode,0,result.stderr)
+        report=json.loads((self.output/"benchmark.json").read_text())
+        self.assertEqual(len(report["rows"]),8)
+        self.assertEqual(report["config"]["curvature_strength"],0)
+        for row in report["rows"]:
+            optimization=json.loads(Path(row["optimization_report"]).read_text())
+            self.assertEqual(optimization["method"],row["method"])
+            self.assertEqual(optimization["maximum_face_weight"],1)
+
     @unittest.skipIf(importlib.util.find_spec("fast_simplification"),"Reference installed; missing-dependency check not applicable")
     def test_unavailable_external_method_is_a_failure_not_a_fake_result(self):
         result = self.run_command("--methods","standard","fast","--feature-samples","0")

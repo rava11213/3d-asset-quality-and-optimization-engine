@@ -84,6 +84,7 @@ class Engine {
     std::set<Edge> creases;
     std::vector<bool> feature_vertex;
     std::size_t crease_count=0, corner_count=0;
+    double curvature_reference=0, minimum_weight=1, maximum_weight=1, mean_weight=1;
 
     std::set<std::size_t> neighbors(std::size_t v) const {
         std::set<std::size_t> n;
@@ -202,6 +203,53 @@ public:
             }
             if(visited.size()!=link.size()) throw std::runtime_error("Non-manifold vertex with disconnected face fans");
         }
+        if(options.curvature_weighted && options.curvature_strength>0) {
+            // Static original-surface normal variation, not a claim of exact
+            // differential curvature. Each interior edge contributes to its two faces.
+            std::vector<Vec3> normals(mesh.triangles.size());
+            std::vector<double> variation(mesh.triangles.size(),0);
+            std::vector<int> degree(mesh.triangles.size(),0);
+            for(std::size_t f=0;f<mesh.triangles.size();++f) {
+                const auto& t=mesh.triangles[f];
+                auto n=cross(sub(mesh.vertices[t[1]],mesh.vertices[t[0]]),sub(mesh.vertices[t[2]],mesh.vertices[t[0]]));
+                const double norm=length(n);
+                for(auto& x:n) x/=norm;
+                normals[f]=n;
+            }
+            for(const auto& item:edges) if(item.second.first==2) {
+                std::vector<std::size_t> adjacent;
+                const auto [u,v]=item.first;
+                std::set_intersection(incident[u].begin(),incident[u].end(),incident[v].begin(),incident[v].end(),std::back_inserter(adjacent));
+                const double change=std::clamp(1-dot(normals[adjacent[0]],normals[adjacent[1]]),0.0,2.0);
+                for(auto f:adjacent) { variation[f]+=change; ++degree[f]; }
+            }
+            std::vector<double> positive;
+            for(std::size_t f=0;f<variation.size();++f) {
+                if(degree[f]) variation[f]/=degree[f];
+                if(variation[f]>1e-15) positive.push_back(variation[f]);
+                else variation[f]=0;
+            }
+            if(!positive.empty()) {
+                std::sort(positive.begin(),positive.end());
+                const double index=.95*(positive.size()-1);
+                const auto low=static_cast<std::size_t>(index);
+                curvature_reference=positive[low]+(index-low)*(positive[std::min(low+1,positive.size()-1)]-positive[low]);
+                std::fill(quadrics.begin(),quadrics.end(),Quadric{});
+                minimum_weight=std::numeric_limits<double>::infinity();
+                maximum_weight=1; mean_weight=0;
+                for(std::size_t f=0;f<mesh.triangles.size();++f) {
+                    const double weight=1+options.curvature_strength*std::min(1.0,variation[f]/curvature_reference);
+                    minimum_weight=std::min(minimum_weight,weight);
+                    maximum_weight=std::max(maximum_weight,weight);
+                    mean_weight+=weight;
+                    auto n=normals[f];
+                    for(auto& x:n) x*=std::sqrt(weight);
+                    const auto& t=mesh.triangles[f];
+                    for(auto v:t) quadrics[v].plane(n,-dot(n,mesh.vertices[t[0]]));
+                }
+                mean_weight/=mesh.triangles.size();
+            }
+        }
         if(options.feature_aware) {
             const double radians=std::acos(-1.0)/180;
             const double threshold=std::cos(options.feature_angle_degrees*radians);
@@ -254,6 +302,10 @@ public:
         SimplifyResult result;
         result.original_crease_edges=crease_count;
         result.protected_corners=corner_count;
+        result.curvature_reference=curvature_reference;
+        result.minimum_face_weight=minimum_weight;
+        result.maximum_face_weight=maximum_weight;
+        result.mean_face_weight=mean_weight;
         while(remaining>target && !heap.empty()) {
             auto c=heap.top(); heap.pop();
             if(c.ru!=revision[c.u] || c.rv!=revision[c.v]) continue;
@@ -314,6 +366,8 @@ SimplifyResult simplify(const Mesh& mesh,std::size_t target,const SimplifyOption
     if(!std::isfinite(options.feature_angle_degrees) || options.feature_angle_degrees<=0 || options.feature_angle_degrees>=180 ||
        !std::isfinite(options.feature_weight) || options.feature_weight<0 || options.feature_weight>1e6)
         throw std::runtime_error("Feature angle must be in (0,180) and weight in [0,1000000]");
+    if(!std::isfinite(options.curvature_strength) || options.curvature_strength<0 || options.curvature_strength>1000)
+        throw std::runtime_error("Curvature strength must be finite and in [0,1000]");
     Engine engine(mesh,options);
     auto result=engine.run(target);
     result.elapsed_seconds=std::chrono::duration<double>(std::chrono::steady_clock::now()-start).count();

@@ -280,3 +280,58 @@ The reference dependency could not be downloaded in the current development
 session due to restricted package-index access. Its adapter is implemented but
 not yet validated against an installed external library; the published experiment
 compares the three local methods only. External superiority is not established.
+
+## Curvature-weighted quadric experiments
+
+Two additional methods are available after rebuilding `assetq-simplify`:
+
+- `curvature`: weighted original face-plane quadrics, with standard topology and
+  boundary policies.
+- `combined`: curvature weighting plus the feature mode's original crease graph,
+  corner protection, segment constraints, and feature-plane quadrics.
+
+For example:
+
+```sh
+PYTHONPATH=python .venv/bin/python -m assetq simplify outputs/sample-model/armadillo.obj --output-dir outputs/armadillo-curvature --method curvature --curvature-strength 4
+PYTHONPATH=python .venv/bin/python -m assetq benchmark outputs/sample-model/armadillo.obj outputs/comparison-inputs/rippled-box.obj --output-dir outputs/new-curvature-comparison --methods standard feature curvature combined --retain 0.5 0.25 --seeds 42 43 --curvature-strength 4
+```
+
+For each original triangle, compute the mean `1 - dot(n_face, n_neighbor)` across
+its interior-edge neighbors. This dimensionless normal-variation **proxy** is
+tessellation dependent; it is not an exact mean/Gaussian curvature estimator. No
+angle deficit is assigned to open boundaries. Variations at or below `1e-15` are
+treated as roundoff. Let `r` be the linearly interpolated 95th percentile of the
+positive face variations. The original plane quadric receives weight:
+
+```text
+weight = 1 + strength * min(variation / r, 1)
+```
+
+If every variation is zero, all weights stay one. Strength must be finite and in
+`[0,1000]` (default 4), yielding weights in `[1,1+strength]`. Statistics are
+calculated once on the original mesh; weighted quadrics are accumulated through
+collapses, not recomputed on the simplified surface. Feature-plane penalties are
+added separately afterward. Higher weighting gives an original region more
+influence over edge costs; it does not guarantee lower measured error there or
+globally. Percentile capping reduces dominance by high-variation outliers but can
+also compress distinctions between genuinely sharp regions.
+
+`--curvature-strength 0` is an exact ablation: `curvature` reproduces `standard`
+and `combined` reproduces `feature`, including deterministic exported geometry.
+Standard and feature modes ignore the weighting policy. Reports record the
+requested strength, proxy name, positive-variation P95 reference, and minimum,
+maximum, and mean original face weight. Weights do not change boundary locking,
+normal-turn validation, manifold checks, or target-budget behavior.
+
+For a smooth surface with localized detail, generate a deterministic bumped sphere:
+
+```sh
+PYTHONPATH=python .venv/bin/python -m assetq.examples outputs/comparison-inputs/bumped-sphere.obj --shape bumped-sphere
+```
+
+This subdivides an octahedron four times, projects to the unit sphere, then adds
+two smooth radial bumps. It is a synthetic diagnostic input, not an AI-generated
+production asset. Compare original geometry, weights, and multiple metrics before
+claiming better detail preservation. A single strength is not an optimized parameter
+search; separate held-out assets would be needed to establish generalization.

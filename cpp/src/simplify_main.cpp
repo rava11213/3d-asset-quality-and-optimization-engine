@@ -7,7 +7,7 @@
 
 int main(int argc,char** argv) {
     try {
-        const std::string usage="assetq-simplify INPUT.obj --target TRIANGLES --export OUTPUT.obj --report RESULT.json [--method standard|feature] [--feature-angle 45] [--feature-weight 10]";
+        const std::string usage="assetq-simplify INPUT.obj --target TRIANGLES --export OUTPUT.obj --report RESULT.json [--method standard|feature|curvature|combined] [--feature-angle 45] [--feature-weight 10] [--curvature-strength 4]";
         if(argc==2 && std::string(argv[1])=="--help") { std::cout<<usage<<'\n'; return 0; }
         if(argc<8) throw std::runtime_error("Usage: "+usage);
         std::filesystem::path input=argv[1],output,report;
@@ -20,14 +20,17 @@ int main(int argc,char** argv) {
             if(arg=="--export") output=value;
             else if(arg=="--report") report=value;
             else if(arg=="--method") {
-                if(value!="standard" && value!="feature") throw std::runtime_error("Method must be standard or feature");
-                options.feature_aware=value=="feature";
+                if(value!="standard" && value!="feature" && value!="curvature" && value!="combined") throw std::runtime_error("Method must be standard, feature, curvature, or combined");
+                options.feature_aware=value=="feature" || value=="combined";
+                options.curvature_weighted=value=="curvature" || value=="combined";
             }
-            else if(arg=="--feature-angle" || arg=="--feature-weight") {
+            else if(arg=="--feature-angle" || arg=="--feature-weight" || arg=="--curvature-strength") {
                 std::size_t used=0;
                 const auto parsed=std::stod(value,&used);
                 if(used!=value.size()) throw std::runtime_error("Invalid numeric option: "+arg);
-                (arg=="--feature-angle" ? options.feature_angle_degrees : options.feature_weight)=parsed;
+                if(arg=="--feature-angle") options.feature_angle_degrees=parsed;
+                else if(arg=="--feature-weight") options.feature_weight=parsed;
+                else options.curvature_strength=parsed;
             }
             else if(arg=="--target") {
                 if(value.empty() || value.find_first_not_of("0123456789")!=std::string::npos) throw std::runtime_error("Target must be a positive integer");
@@ -51,7 +54,13 @@ int main(int argc,char** argv) {
         out<<std::setprecision(17)
            <<"{\n  \"schema_version\": 1,\n  \"algorithm\": \"QEM\","
            <<"\n  \"original_triangles\": "<<mesh.triangles.size()
-           <<",\n  \"method\": \""<<(options.feature_aware?"feature":"standard")<<"\""
+           <<",\n  \"method\": \""<<(options.curvature_weighted?(options.feature_aware?"combined":"curvature"):(options.feature_aware?"feature":"standard"))<<"\""
+           <<",\n  \"curvature_proxy\": \""<<(options.curvature_weighted?"mean_adjacent_face_normal_disagreement":"disabled")<<"\""
+           <<",\n  \"curvature_strength\": "<<options.curvature_strength
+           <<",\n  \"curvature_positive_p95_reference\": "<<result.curvature_reference
+           <<",\n  \"minimum_face_weight\": "<<result.minimum_face_weight
+           <<",\n  \"maximum_face_weight\": "<<result.maximum_face_weight
+           <<",\n  \"mean_face_weight\": "<<result.mean_face_weight
            <<",\n  \"feature_angle_degrees\": "<<options.feature_angle_degrees
            <<",\n  \"feature_weight\": "<<options.feature_weight
            <<",\n  \"original_crease_edges\": "<<result.original_crease_edges
