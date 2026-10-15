@@ -1,14 +1,56 @@
 # 3D Asset Quality and Optimization Engine
 
-Measure how much smaller an AI-generated mesh can become while preserving its shape.
-Stages 1–4 provide C++ mesh inspection, geometry-only OBJ export, optional
-normalization, QEM simplification, Python + NVIDIA Warp surface evaluation, and
-automated multi-asset benchmarks. The web viewer is the remaining stage. Inspection and
-simplification require no Python runtime dependencies; evaluation uses optional extras.
+A geometry-processing tool that answers: **How much smaller can we make a 3D model while preserving its shape?**
 
-## Build
+The intended workflow starts with a model generated in **Meshy AI**, simplifies its triangle mesh using a custom **C++ Quadric Error Metrics (QEM)** implementation, and measures geometric changes using **NVIDIA Warp**. Reports compare triangle reduction, file size, runtime, and surface error across multiple triangle budgets.
 
-Requires a C++17 compiler. With CMake 3.16 or later:
+## Methods and technologies
+
+| Component | Method / technology | Role |
+|---|---|---|
+| Asset creation | Meshy AI, manual OBJ export | Supply AI-generated meshes for optimization |
+| Mesh inspection | C++17 | Validate input and report counts, bounds, and geometry issues |
+| Mesh simplification | Custom C++ QEM edge collapse | Reduce triangles while minimizing accumulated plane error |
+| Surface evaluation | Python, NumPy, NVIDIA Warp | Sample surfaces and compute bidirectional closest-point distances |
+| Benchmarking | Python and Matplotlib | Compare assets, budgets, and sampling seeds; generate tables and plots |
+
+Meshy AI is an upstream source of assets: this repository does **not** call the Meshy API or generate models itself. Manually exported triangulated OBJ files are accepted, including models from other tools. The current reference experiments use a downloaded Stanford Armadillo model and synthetic meshes; they do not establish performance across Meshy-generated assets.
+
+### QEM simplification
+
+For each triangle, the optimizer computes a unit face plane and accumulates its outer product into the quadrics of its vertices. An edge's combined quadric estimates the cost of replacing its endpoints with a single vertex:
+
+```text
+Q_edge = Q_u + Q_v
+cost(p) = [p.x, p.y, p.z, 1] × Q_edge × [p.x, p.y, p.z, 1]^T
+```
+
+The implementation solves the corresponding 3×3 system for a candidate position and compares its cost with the endpoints and midpoint. Singular systems use those fallback positions. A priority queue selects low-cost edges; revision stamps discard stale entries as local connectivity changes.
+
+Before accepting a collapse, the optimizer checks the edge link condition, duplicate faces, near-zero triangle areas, and changes to surviving face normals. All boundary vertices are locked. Working coordinates are centered and scaled to a unit bounding-box diagonal for numerical stability, then restored for export.
+
+Each budget starts from the original mesh. Budgets default to retaining 75%, 50%, and 25% of the original triangles. Invalid collapses are rejected, so some targets remain unattainable. Reports record the actual achieved count and stop reason; the optimizer never removes more triangles than the requested budget permits.
+
+### NVIDIA Warp evaluation
+
+The evaluator samples points uniformly by surface area using area-weighted triangle selection and square-root barycentric sampling. NVIDIA Warp performs unsigned closest-point queries against the target triangle surface in both directions:
+
+- **Original → simplified:** measures how closely the candidate represents the original surface.
+- **Simplified → original:** measures candidate surface displaced from the original.
+
+Both meshes use the original model's center and bounding-box diagonal. Candidates are not independently aligned or rescaled, so displacement and shrinkage contribute to the measured error.
+
+The evaluator reports mean, RMS, P95, P99, and sampled maximum distances for each direction and an equally weighted pooled distribution. Normalized errors are fractions of the original bounding-box diagonal; original-coordinate-unit distances are also included. Fixed seeds make sampling reproducible, with identical original sample points across budgets.
+
+Warp is the geometry-query backend; the QEM optimizer is implemented separately in C++. CPU evaluation is the default and was tested on Apple Silicon. `--device cuda:0` selects CUDA on a supported NVIDIA system.
+
+### Tradeoff selection
+
+Benchmarks compare actual triangle reduction against the **larger directional P95**, taking the maximum across requested seeds. An optional error threshold selects the smallest tested version that passes for every requested seed. This is a sampled geometric tolerance, not an accuracy percentage or a guarantee about untested budgets.
+
+## Build and install
+
+Requires a C++17 compiler and Python 3.10+. With CMake 3.16 or later:
 
 ```sh
 cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
@@ -23,271 +65,100 @@ c++ -std=c++17 -O2 -Wall -Wextra -Wpedantic -Icpp/include cpp/src/mesh.cpp cpp/s
 c++ -std=c++17 -O2 -Wall -Wextra -Wpedantic -Icpp/include cpp/src/mesh.cpp cpp/src/simplify.cpp cpp/src/simplify_main.cpp -o build/assetq-simplify
 ```
 
-## Inspect an asset
-
-Export a **triangulated OBJ** from your model tool. Keep the source and its associated
-textures together. No Meshy account or API key is required.
-
-```sh
-PYTHONPATH=python python3 -m assetq inspect tests/fixtures/tetrahedron.obj --report outputs/tetrahedron-report.json --export outputs/tetrahedron-normalized.obj --normalize
-```
-
-Or call C++ directly:
-
-```sh
-build/assetq-inspect tests/fixtures/tetrahedron.obj --report outputs/tetrahedron-report.json --export outputs/tetrahedron-copy.obj
-```
-
-Create output directories before running. An existing report or export at a distinct
-path is replaced; the source cannot be used as an output path. Omit `--normalize`
-to retain the original coordinates. Reports always describe the original input.
-
-Python 3.10+ is required for the wrapper. Optionally install with
-`python3 -m pip install -e .` to expose `assetq inspect`. The wrapper finds the C++
-binary in the source tree's `build/` directory or on PATH; `--binary PATH` selects
-another location (including `build/Release/assetq-inspect.exe` for multi-config builds).
-
-## Report semantics
-
-- Vertex and triangle counts include defective faces and unused vertices; nothing is repaired.
-- File size is the source OBJ's bytes, excluding textures and material files.
-- Bounds include all vertices, including isolated vertices.
-- Normalization is `normalized = (original - center) / diagonal`, where center is
-  the bounding-box midpoint and diagonal is its Euclidean diagonal length.
-  The report records center and reciprocal diagonal as scale. A zero-size mesh can
-  be inspected but cannot be normalized.
-- Degenerate triangles have double area divided by the squared bounding-box
-  diagonal at most `1e-12`; this includes repeated indices and collinear vertices.
-- Duplicate triangles use the same three vertex indices, regardless of winding.
-- Boundary edges belong to one face; non-manifold edges belong to more than two.
-  Repeated edges within one defective face count once. Non-manifold **vertices**,
-  self-intersections, holes, and coincident positions with distinct indices are not diagnosed.
-- Inconsistent winding counts edges with exactly two incident faces traversing
-  the shared edge in the same direction. Defective and duplicate faces contribute
-  to topology counts, so these are diagnostics rather than repair instructions.
-
-## OBJ scope
-
-Reads XYZ `v` records and triangle `f` records. Supports positive one-based indices,
-negative indices relative to vertices already read, comments, and face tokens such
-as `1/2/3` or `1//3`. Only the vertex portion of face tokens is used and validated;
-UV and normal references are discarded. Other records are ignored and counted.
-Rejects polygons, forward vertex references, zero/out-of-range indices, non-finite
-coordinates, and weighted or colored vertices. Output contains only positions and
-triangle indices: materials, UVs, normals, groups, and textures are not retained.
-The original file remains the source of truth for later attribute-preserving work.
-
-## Verify
-
-After building:
-
-```sh
-python3 -m unittest discover -s tests -v
-```
-
-Set `ASSETQ_BINARY` to test a binary outside `build/assetq-inspect`. Tests cover known
-geometry counts, malformed input, negative/slash indices, source preservation,
-normalization round trips, zero-size meshes, and the Python entry point.
-Simplification tests additionally cover actual reductions, closed topology, boundary
-preservation, scale/translation, deterministic geometry, rejected inputs, unattainable
-budgets, and the Python budget sweep. Set `ASSETQ_SIMPLIFY_BINARY` to select another
-simplifier executable.
-
-## Simplify an asset (Stage 2)
-
-Generate independent versions retaining 75%, 50%, and 25% of input triangles:
-
-```sh
-PYTHONPATH=python python3 -m assetq simplify your-model.obj --output-dir outputs/your-model
-```
-
-Customize the fractions with `--retain 0.8 0.4`. The wrapper rounds targets down,
-clamps them to at least one triangle, and deduplicates equal targets. Each version
-starts from the original mesh. It saves `mesh-N.obj`, `mesh-N.json`, an original
-inspection report, and `summary.json`. Paths already present in that directory may
-be replaced; use a separate directory for each experiment. `--binary` selects the
-simplifier and `--inspector` selects the inspector.
-
-For one exact integer target, use C++ directly:
-
-```sh
-build/assetq-simplify your-model.obj --target 1000 --export outputs/simplified.obj --report outputs/simplification.json
-```
-
-The C++ optimizer:
-
-1. Centers and scales a working copy to unit bounding-box diagonal for numerical stability.
-2. Builds face incidence, validates manifold connectivity and winding, and accumulates
-   unit face-plane outer products into each vertex's 4x4 quadric.
-3. Sums endpoint quadrics for each edge. Solves the 3x3 optimal-position system
-   with pivoting; compares that candidate with endpoints and midpoint. Singular
-   systems use those fallback positions.
-4. Orders edges in a min-cost priority queue. Revision stamps discard stale entries;
-   local connectivity and neighboring candidate costs are refreshed after each collapse.
-5. Rejects collapses violating the edge link condition, producing duplicate or
-   near-zero-area faces, or changing a surviving face normal by at least `acos(0.2)`
-   (about 78 degrees). The normal threshold applies per collapse, not cumulatively.
-6. Compacts surviving vertices/faces and restores original coordinates for export.
-
-Initial inputs must have non-degenerate, non-duplicate triangles, consistently wound
-manifold edges, and connected face fans at each vertex. Disconnected components are
-allowed if each component satisfies these checks. Inspection can diagnose inputs
-the simplifier refuses; automatic repair is not implemented. Isolated vertices
-are removed during compaction.
-
-All boundary vertices are locked, including their incident candidate edges. This
-preserves open boundaries conservatively and can limit reductions. Closed interior
-edge collapses remove two triangles; odd targets may therefore stop one triangle
-above the budget. The optimizer never goes below the requested triangle count.
-Read `target_reached`, `achieved_triangles`, and `stop_reason` in each report.
-
-The report also includes collapse/rejection counts, triangle reduction, OBJ file
-sizes, and optimizer wall time (validation, initialization, and compaction included;
-file loading/export excluded). Text OBJ size is affected by numeric formatting,
-so triangle reduction does not imply an identical byte-size reduction.
-
-QEM cost guides local edge selection; it is **not a measured surface-error score**.
-There is no self-intersection detection, texture/UV preservation, or explicit sharp
-crease constraint yet. Only the lowest-QEM position is tested for an edge; a rejected
-position may leave other geometrically valid choices unexplored. Boundary locks and
-validation favor conservative results over reaching every requested budget. Large
-production assets have not yet been benchmarked.
-
-## Next stages
-
-1. Local viewer: synchronized comparisons and selection by an error threshold.
-
-## Evaluate shape preservation (Stage 3)
-
-Install optional dependencies in an isolated environment:
+Install the Python package and evaluation/benchmark dependencies:
 
 ```sh
 python3 -m venv .venv
-.venv/bin/python -m pip install -e '.[evaluation]'
+.venv/bin/python -m pip install -e '.[benchmark]'
 ```
 
-Evaluate the downloaded Armadillo and all three exported versions:
+Inspection and simplification wrappers have no runtime Python dependencies. The `evaluation` extra installs NumPy and Warp; `benchmark` also installs Matplotlib. On Windows, activate the virtual environment and use its `python` command instead of `.venv/bin/python`.
+
+The CLI locates C++ executables in `build/` or on PATH. Use `--binary` to select another executable and `--inspector` where supported to select the inspector. Multi-config builds may place executables under `build/Release/`.
+
+## Usage
+
+Run commands from the repository root. Replace `assets/model.obj` with the actual path to your triangulated Meshy export or another OBJ file; it is a placeholder, not a bundled model. Use `tests/fixtures/tetrahedron.obj` for a bundled smoke test, although its four faces cannot be reduced further under the topology checks.
+
+### Inspect
 
 ```sh
-PYTHONPATH=python .venv/bin/python -m assetq evaluate outputs/sample-model/armadillo.obj outputs/armadillo-results/mesh-64861.obj outputs/armadillo-results/mesh-43241.obj outputs/armadillo-results/mesh-21620.obj --report outputs/armadillo-results/evaluation.json
+mkdir -p outputs
+.venv/bin/assetq inspect assets/model.obj --report outputs/inspection.json
 ```
 
-Names encode the requested budget; read the report for the achieved triangle count.
-This command uses 100,000 samples **per direction per candidate**, seed 42, and
-Warp's CPU backend. Select a different count/seed with `--samples`/`--seed`.
-On a supported NVIDIA machine, `--device cuda:0` selects CUDA. macOS uses CPU;
-no Metal backend is assumed. Tested locally with Warp 1.18.0 and NumPy 2.5.4.
+To export a centered mesh with bounding-box diagonal 1, add `--export outputs/normalized.obj --normalize`. Reports always describe the original input. Inspection includes vertex/triangle counts, source file bytes, bounds, degenerate and duplicate triangles, boundary and non-manifold edges, inconsistent winding, and isolated vertices. It diagnoses problems without repairing them.
 
-Original-to-simplified samples estimate how well the candidate covers the original;
-reverse samples detect candidate surface displaced from the original. Points are
-sampled uniformly by surface area (area-weighted face choice, square-root barycentric
-sampling). Each point queries the target triangle surface with Warp's unsigned
-closest-point query, rather than searching target vertices or another point cloud.
-No alignment or independent candidate normalization is performed. Both meshes share
-the original bounding-box center and diagonal, improving float32 query precision.
+### Simplify
 
-The JSON records mean, RMS, P95, P99, and sampled maximum for each direction and
-an equally weighted pooled distribution. `normalized` values are fractions of the
-original diagonal; multiply by 100 to express percentages. `original_units` scales
-distances back to the OBJ's unspecified coordinate units. For conservative later
-threshold selection, `worst_direction_p95_normalized` is also recorded. It can differ
-from pooled P95. Percentiles use NumPy's linear method.
+```sh
+.venv/bin/assetq simplify assets/model.obj --output-dir outputs/model-versions --retain 0.75 0.5 0.25
+```
 
-Hashes, source paths/counts, seed, library versions, device, and elapsed time are
-recorded for reproducibility. Time includes loading, sampling, BVH construction,
-queries, and first-use compilation, but excludes report serialization. Original
-sample points are identical across candidates for a fixed seed and input; target
-samples depend on the target surface. JIT cache defaults to `work/warp-cache`,
-overridable with `ASSETQ_WARP_CACHE`.
+This produces `mesh-N.obj`, optimizer JSON reports, an original inspection report, and `summary.json`. `N` is the requested triangle count; achieved counts may differ. Fractional budgets are rounded down, clamped to at least one triangle, and deduplicated.
 
-Inputs must be finite triangle OBJs without near-degenerate triangles. Open surfaces
-are supported: unsigned distances do not require watertightness. Invalid geometry
-and failed closest-point queries raise errors instead of silently dropping samples.
-The evaluation OBJ parser has the same geometry-only subset as the inspector;
-UVs/materials/normals are ignored. All outputs preserve source meshes.
+For a single integer budget:
 
-Sampled metrics are estimates, especially for small features; increase sample counts
-or repeat seeds for sensitive comparisons. Sampled maximum is **not exact Hausdorff
-distance**. Float32 introduces a numerical floor, even for identical meshes. These
-metrics describe surface position, not texture, shading, topology, or self-intersections.
+```sh
+build/assetq-simplify assets/model.obj --target 1000 --export outputs/simplified.obj --report outputs/simplification.json
+```
 
-Run the full suite with evaluation dependencies enabled:
+### Evaluate
+
+```sh
+.venv/bin/assetq evaluate assets/model.obj outputs/simplified.obj --report outputs/evaluation.json --samples 100000 --seed 42
+```
+
+Supply multiple simplified OBJ paths to evaluate several versions in one command. Samples are counted **per direction per candidate**. JSON records input hashes, paths, triangle counts, library versions, device, seed, metrics, and elapsed time.
+
+### Benchmark multiple assets
+
+```sh
+.venv/bin/assetq benchmark assets/model.obj assets/another-model.obj --output-dir outputs/benchmark-run --retain 0.75 0.5 0.25 --samples 100000 --seeds 42 43 --max-p95 0.0005
+```
+
+Choose a new or empty directory for each benchmark. `--max-p95 0.0005` means **0.05% of the original diagonal**. Omit it to run comparisons without selecting a version. Partially evaluated budgets cannot qualify; if none passes, selection is null.
+
+The runner processes assets sequentially, records failures, and continues other experiments. Exit status is 1 if an experiment fails. A valid simplification stopping above its budget is still a successful measurement, marked with `target_reached=false`.
+
+| Output | Contents |
+|---|---|
+| `benchmark.json` | Configuration, environment, source/executable hashes, per-seed rows, selections, failures |
+| `results.csv` | Counts, reductions, file sizes, surface metrics, and timings per asset/budget/seed |
+| `tradeoffs.png`, `tradeoffs.svg` | Triangle reduction versus worst-direction, worst-seed P95 |
+| `report.md` | Readable comparison table, chart, threshold selections, and failures |
+| Per-asset folders | Exported meshes, inspections, optimizer reports, evaluations, and command logs |
+
+CSV/JSON errors are normalized fractions; chart/report errors are percentages. Charts exclude budgets with failed seeds. Connecting points does not establish error between tested budgets or imply monotonic error.
+
+Optimizer time includes validation, initialization, and compaction, but excludes OBJ loading/export. It is repeated in each seed's CSV row, so do not sum it across seeds. Evaluation time includes loading, sampling, BVH construction, queries, and first-use JIT compilation. It is not a warmed-up kernel benchmark.
+
+## Supported inputs and limitations
+
+- Triangle OBJ geometry only: XYZ vertices, positive one-based or negative vertex indices, comments, and slash-form face tokens. UVs, normals, materials, groups, and textures are discarded on export; preserve the source asset.
+- Polygons, forward vertex references, weighted/colored vertices, and non-finite coordinates are rejected. OBJ byte counts exclude external textures and material files.
+- Simplification requires non-degenerate, non-duplicate triangles, consistently wound manifold edges, and connected face fans at each vertex. Isolated vertices are removed during output compaction. Automatic repair is not implemented.
+- Boundary locking limits reduction on open meshes. Only the lowest-QEM candidate position for each edge is validated; other valid positions may remain unexplored. Sharp creases and self-intersections are not explicitly constrained.
+- Degeneracy uses double area normalized by squared bounding-box diagonal, with a threshold of `1e-12`. Bounds include all vertices, including isolated ones. Zero-size meshes can be inspected but not normalized.
+- Evaluation uses float32 Warp queries and sampled estimates. Sampled maximum is **not exact Hausdorff distance**. Increase sample counts or repeat seeds when assessing small features.
+- Surface distances do not measure texture, shading, topology quality, or visual fidelity. QEM cost itself is not a measured surface-error score.
+- Text OBJ formatting can increase file size despite triangle reduction. Broad production-asset validation, competing-simplifier baselines, and a web comparison viewer remain future work.
+
+Generated outputs, downloaded models, build artifacts, and the virtual environment are excluded from Git. Inspection/simplification output paths may replace existing files; benchmarks require a new or empty directory. Source mesh paths are protected against direct output aliasing.
+
+## Tests
 
 ```sh
 .venv/bin/python -m unittest discover -s tests -v
 ```
 
-Evaluation tests use analytic parallel triangles with known distance, identical
-surfaces, asymmetric coverage, known sampling-area ratios, scale invariance,
-reproducible seeds, invalid inputs, and CLI source protection. Without optional
-dependencies, evaluation tests skip while Stage 1/2 tests still run.
+Tests cover inspection, invalid input, normalization, topology checks, simplification budgets, boundary preservation, deterministic exports, analytic surface distances, sampling distributions, seed reproducibility, benchmark failure handling, and threshold selection. Evaluation and benchmark tests skip if their optional dependencies are missing.
 
-Warp references: [installation](https://github.com/NVIDIA/warp/blob/main/docs/user_guide/installation.rst),
-[closest-point query](https://nvidia.github.io/warp/v1.17/language_reference/_generated/warp.mesh_query_point_no_sign.html).
+Set `ASSETQ_BINARY` or `ASSETQ_SIMPLIFY_BINARY` to test executables outside `build/`. Warp's JIT cache defaults to `work/warp-cache` and can be overridden with `ASSETQ_WARP_CACHE`.
 
-## Automated benchmarks (Stage 4)
+## References
 
-Install the benchmark extra (adds Matplotlib for static plots):
-
-```sh
-.venv/bin/python -m pip install -e '.[benchmark]'
-```
-
-Run multiple inputs, independent triangle budgets, and repeat evaluation seeds:
-
-```sh
-PYTHONPATH=python .venv/bin/python -m assetq benchmark outputs/sample-model/armadillo.obj outputs/qem-demo/original.obj tests/fixtures/tetrahedron.obj --output-dir outputs/my-benchmark --retain 0.75 0.5 0.25 --samples 100000 --seeds 42 43 --max-p95 0.0005
-```
-
-Choose a **new or empty output directory** for every run. Defaults are 75%, 50%,
-25% retention, 100,000 samples per direction, seed 42, and CPU evaluation.
-`--binary`, `--inspector`, and `--device` select executables and the Warp backend.
-Repeated retention targets and seeds are deduplicated. Asset directory prefixes
-are numbered to distinguish identical filenames from different directories.
-
-Each asset is inspected, simplified from its original at each budget, inspected
-again after simplification, and evaluated at every requested seed. Failed inputs,
-budgets, and evaluation seeds are recorded while remaining experiments continue.
-Exit status is 0 for a completed run and 1 if any experiment fails. A valid optimizer
-result stopping above its budget is recorded as a successful measurement, with
-`target_reached=false`; actual triangle reduction determines its plotted position.
-
-Run outputs:
-
-- `benchmark.json`: configuration, source/executable SHA-256 hashes, environment,
-  per-seed rows, budget summaries, selections, and explicit failures. Checkpointed
-  after each asset inspection failure or completed budget; final status is
-  `complete` or `partial_failure`. A terminated run may retain `running` status.
-- `results.csv`: one row per successful asset/budget/seed, with pooled mean/RMS/
-  P95/P99/sampled maximum, each directional P95, larger directional P95, original
-  and achieved triangle counts, reduction fractions, file sizes, and timings.
-- `tradeoffs.png` / `tradeoffs.svg`: static plots of actual triangle reduction
-  versus the maximum across seeds of the larger directional P95.
-- `report.md`: readable comparison table, chart, failure summary, and optional
-  threshold selections.
-- Per-asset directories: original inspection, exported meshes, optimizer reports,
-  candidate inspections, per-seed full evaluation reports, and command logs.
-
-`--max-p95` is optional and takes a **fraction of original diagonal**:
-`0.0005` means **0.05%**, not 0.0005%. Selection requires the larger directional
-P95 to meet this threshold for **every requested seed**, then chooses the lowest
-achieved triangle count. Partially evaluated budgets cannot qualify. If no tested
-version passes, the selection is null. The original is not inserted as an implicit
-fallback. This selects among tested versions; it does not search untested budgets.
-
-Charts exclude budgets with failed seeds. Table rows can show partial evaluations
-and explicitly flag completeness. Connected plot points do not imply monotonic
-error or establish measurements between budgets. All numerical errors in CSV/JSON
-are normalized fractions; chart/report errors are percentages. Unlike Stage 3's
-pooled P95 summary, threshold selection uses the more conservative **worst-direction,
-worst-seed P95**. Mean pooled errors in budget summaries average the requested seeds.
-
-Optimizer time is measured once per budget and repeated in its per-seed CSV rows;
-do not sum that column across seeds. Evaluation times include JIT compilation on
-first use and are not warmed-up kernel benchmarks. Overall elapsed time covers
-experiments but excludes final chart/report rendering. Asset processing is sequential
-for predictable resource use. No resume or automatic repair is implemented.
-
-`.venv/bin/python -m unittest discover -s tests -v` also checks complete benchmark
-artifacts, partial/all-asset failure reporting, nonempty-directory protection,
-and selection behavior when a seed is missing or a requested budget is unattainable.
+- [Meshy AI](https://www.meshy.ai/) — upstream asset-generation tool; manual export workflow.
+- [Surface Simplification Using Quadric Error Metrics, Garland and Heckbert (1997)](https://www.cs.cmu.edu/~garland/quadrics/) — simplification method.
+- [NVIDIA Warp](https://github.com/NVIDIA/warp) — geometry-query backend.
+- [Warp closest-point query documentation](https://nvidia.github.io/warp/v1.17/language_reference/_generated/warp.mesh_query_point_no_sign.html).
