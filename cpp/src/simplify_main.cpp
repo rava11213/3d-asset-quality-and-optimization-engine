@@ -7,17 +7,28 @@
 
 int main(int argc,char** argv) {
     try {
-        const std::string usage="assetq-simplify INPUT.obj --target TRIANGLES --export OUTPUT.obj --report RESULT.json";
+        const std::string usage="assetq-simplify INPUT.obj --target TRIANGLES --export OUTPUT.obj --report RESULT.json [--method standard|feature] [--feature-angle 45] [--feature-weight 10]";
         if(argc==2 && std::string(argv[1])=="--help") { std::cout<<usage<<'\n'; return 0; }
         if(argc<8) throw std::runtime_error("Usage: "+usage);
         std::filesystem::path input=argv[1],output,report;
         std::size_t target=0;
+        assetq::SimplifyOptions options;
         for(int i=2;i<argc;++i) {
             const std::string arg=argv[i];
             if(i+1>=argc) throw std::runtime_error("Missing value for "+arg);
             const std::string value=argv[++i];
             if(arg=="--export") output=value;
             else if(arg=="--report") report=value;
+            else if(arg=="--method") {
+                if(value!="standard" && value!="feature") throw std::runtime_error("Method must be standard or feature");
+                options.feature_aware=value=="feature";
+            }
+            else if(arg=="--feature-angle" || arg=="--feature-weight") {
+                std::size_t used=0;
+                const auto parsed=std::stod(value,&used);
+                if(used!=value.size()) throw std::runtime_error("Invalid numeric option: "+arg);
+                (arg=="--feature-angle" ? options.feature_angle_degrees : options.feature_weight)=parsed;
+            }
             else if(arg=="--target") {
                 if(value.empty() || value.find_first_not_of("0123456789")!=std::string::npos) throw std::runtime_error("Target must be a positive integer");
                 std::size_t used=0;
@@ -33,13 +44,19 @@ int main(int argc,char** argv) {
         };
         if(same(input,output) || same(input,report) || same(output,report)) throw std::runtime_error("Input, export, and report paths must differ");
         const auto mesh=assetq::load_obj(input);
-        const auto result=assetq::simplify(mesh,target);
+        const auto result=assetq::simplify(mesh,target,options);
         assetq::write_obj(result.mesh,output);
         std::ofstream out(report);
         if(!out) throw std::runtime_error("Cannot write simplification report");
         out<<std::setprecision(17)
            <<"{\n  \"schema_version\": 1,\n  \"algorithm\": \"QEM\","
            <<"\n  \"original_triangles\": "<<mesh.triangles.size()
+           <<",\n  \"method\": \""<<(options.feature_aware?"feature":"standard")<<"\""
+           <<",\n  \"feature_angle_degrees\": "<<options.feature_angle_degrees
+           <<",\n  \"feature_weight\": "<<options.feature_weight
+           <<",\n  \"original_crease_edges\": "<<result.original_crease_edges
+           <<",\n  \"protected_corners\": "<<result.protected_corners
+           <<",\n  \"feature_policy\": \""<<(options.feature_aware?"original_crease_network_segment_constraints":"disabled")<<"\""
            <<",\n  \"target_triangles\": "<<target
            <<",\n  \"achieved_triangles\": "<<result.mesh.triangles.size()
            <<",\n  \"original_vertices\": "<<mesh.vertices.size()

@@ -44,7 +44,8 @@ def simplify(args, parser):
     for target in targets:
         exported = args.output_dir / f"mesh-{target}.obj"
         report_path = args.output_dir / f"mesh-{target}.json"
-        result = subprocess.run([binary, str(args.input), "--target", str(target), "--export", str(exported), "--report", str(report_path)], capture_output=True, text=True)
+        result = subprocess.run([binary, str(args.input), "--target", str(target), "--export", str(exported), "--report", str(report_path),
+                                 "--method",args.method,"--feature-angle",str(args.feature_angle),"--feature-weight",str(args.feature_weight)], capture_output=True, text=True)
         if result.returncode:
             print(result.stderr.strip(), file=sys.stderr)
             return result.returncode
@@ -53,7 +54,7 @@ def simplify(args, parser):
         reports.append(report)
         print(result.stdout.strip())
     summary = {"schema_version": 1, "input": str(args.input), "requested_retention_fractions": args.retain,
-               "original_triangles": count, "versions": reports}
+               "original_triangles": count, "method":args.method,"versions": reports}
     (args.output_dir / "summary.json").write_text(json.dumps(summary, indent=2) + "\n")
     print(f"Results: {args.output_dir / 'summary.json'}")
     return 0
@@ -74,6 +75,9 @@ def main():
     optimize.add_argument("--retain", type=float, nargs="+", default=[0.75, 0.5, 0.25])
     optimize.add_argument("--binary", type=Path, help="Path to assetq-simplify")
     optimize.add_argument("--inspector", type=Path, help="Path to assetq-inspect")
+    optimize.add_argument("--method", choices=["standard","feature"], default="standard")
+    optimize.add_argument("--feature-angle", type=float, default=45, help="Original dihedral crease threshold in degrees")
+    optimize.add_argument("--feature-weight", type=float, default=10, help="Additional crease-plane quadric weight")
     evaluation = sub.add_parser("evaluate", help="Measure bidirectional surface distances using NVIDIA Warp")
     evaluation.add_argument("original", type=Path)
     evaluation.add_argument("simplified", type=Path, nargs="+")

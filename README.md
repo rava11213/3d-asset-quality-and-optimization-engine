@@ -138,7 +138,7 @@ Optimizer time includes validation, initialization, and compaction, but excludes
 - Triangle OBJ geometry only: XYZ vertices, positive one-based or negative vertex indices, comments, and slash-form face tokens. UVs, normals, materials, groups, and textures are discarded on export; preserve the source asset.
 - Polygons, forward vertex references, weighted/colored vertices, and non-finite coordinates are rejected. OBJ byte counts exclude external textures and material files.
 - Simplification requires non-degenerate, non-duplicate triangles, consistently wound manifold edges, and connected face fans at each vertex. Isolated vertices are removed during output compaction. Automatic repair is not implemented.
-- Boundary locking limits reduction on open meshes. Only the lowest-QEM candidate position for each edge is validated; other valid positions may remain unexplored. Sharp creases and self-intersections are not explicitly constrained.
+- Boundary locking limits reduction on open meshes. Only the lowest-QEM candidate position for each edge is validated; other valid positions may remain unexplored. Standard mode has no explicit sharp-crease constraints. Neither mode checks self-intersections.
 - Degeneracy uses double area normalized by squared bounding-box diagonal, with a threshold of `1e-12`. Bounds include all vertices, including isolated ones. Zero-size meshes can be inspected but not normalized.
 - Evaluation uses float32 Warp queries and sampled estimates. Sampled maximum is **not exact Hausdorff distance**. Increase sample counts or repeat seeds when assessing small features.
 - Surface distances do not measure texture, shading, topology quality, or visual fidelity. QEM cost itself is not a measured surface-error score.
@@ -162,3 +162,36 @@ Set `ASSETQ_BINARY` or `ASSETQ_SIMPLIFY_BINARY` to test executables outside `bui
 - [Surface Simplification Using Quadric Error Metrics, Garland and Heckbert (1997)](https://www.cs.cmu.edu/~garland/quadrics/) — simplification method.
 - [NVIDIA Warp](https://github.com/NVIDIA/warp) — geometry-query backend.
 - [Warp closest-point query documentation](https://nvidia.github.io/warp/v1.17/language_reference/_generated/warp.mesh_query_point_no_sign.html).
+
+## Experimental feature-aware QEM
+
+Standard QEM remains the default. After rebuilding the C++ simplifier:
+
+```sh
+PYTHONPATH=python .venv/bin/python -m assetq simplify outputs/sample-model/armadillo.obj --output-dir outputs/armadillo-feature --method feature --feature-angle 45 --feature-weight 10
+```
+
+The C++ executable accepts the same three options. Angle must be in `(0,180)`
+degrees and weight in `[0,1000000]`, both finite. Original interior edges whose
+adjacent face normals differ by at least the threshold are classified as creases.
+Two planes containing each crease and perpendicular to its adjacent faces add
+weighted plane quadrics at its endpoints. These penalize movement off the crease.
+
+Feature endpoints/junctions (degree other than two) and chain turns over 30 degrees
+are locked as corners. Other feature vertices can collapse only with crease
+neighbors, using a position constrained to the current edge segment. Smooth
+vertices cannot collapse into a crease. Original boundaries remain locked.
+The original crease graph is remapped after collapses, not reclassified from
+changing normals. Curved chains can change shape; exact preservation of the entire
+original feature geometry is not guaranteed. Edges incident to locked corners
+are excluded, which can limit reduction.
+
+Weight zero retains graph/corner/segment constraints but removes the additional
+plane penalty, enabling an ablation. With no detected creases, this mode produces
+the same geometry as standard QEM. Reports record method, angle, weight, original
+crease count, and protected-corner count. Feature-specific tests cover detection,
+corner positions, valid topology, no-feature behavior, thresholds, zero weight,
+determinism, and invalid options. These establish behavior, not superior quality.
+
+The `benchmark` command currently uses standard QEM. Multi-method comparisons and
+normal/feature metrics are planned extensions.

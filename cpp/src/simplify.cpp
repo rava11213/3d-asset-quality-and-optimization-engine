@@ -80,6 +80,10 @@ class Engine {
     std::size_t remaining;
     Vec3 original_center;
     double original_diagonal;
+    SimplifyOptions options;
+    std::set<Edge> creases;
+    std::vector<bool> feature_vertex;
+    std::size_t crease_count=0, corner_count=0;
 
     std::set<std::size_t> neighbors(std::size_t v) const {
         std::set<std::size_t> n;
@@ -89,6 +93,10 @@ class Engine {
     void enqueue(std::size_t u,std::size_t v) {
         if(u>v) std::swap(u,v);
         if(locked[u] || locked[v] || incident[u].empty() || incident[v].empty()) return;
+        const bool feature_edge=creases.count(edge(u,v))!=0;
+        // Keep smooth collapses away from the original crease network. A crease
+        // can shorten only along itself; it cannot merge into a neighboring patch.
+        if(options.feature_aware && (feature_vertex[u] || feature_vertex[v]) && !feature_edge) return;
         const auto q=quadrics[u]+quadrics[v];
         const auto& a=mesh.vertices[u]; const auto& b=mesh.vertices[v];
         Vec3 mid={(a[0]+b[0])/2,(a[1]+b[1])/2,(a[2]+b[2])/2};
@@ -97,7 +105,23 @@ class Engine {
         auto consider=[&](const Vec3& p) { const double c=q.cost(p); if(c<cost) { best=p; cost=c; } };
         consider(b); consider(mid);
         Vec3 optimum{};
-        if(q.optimum(optimum)) consider(optimum);
+        if(feature_edge) {
+            // Minimize the quadratic on p(t)=a+t(b-a), 0<=t<=1.
+            const auto direction=sub(b,a);
+            double aa=0,bb=0;
+            for(int i=0;i<3;++i) {
+                for(int j=0;j<3;++j) {
+                    aa+=direction[i]*q.m[i][j]*direction[j];
+                    bb+=direction[i]*q.m[i][j]*a[j];
+                }
+                bb+=direction[i]*q.m[i][3];
+            }
+            if(aa>1e-15) {
+                const double t=std::clamp(-bb/aa,0.0,1.0);
+                for(int k=0;k<3;++k) optimum[k]=a[k]+t*direction[k];
+                consider(optimum);
+            }
+        } else if(q.optimum(optimum)) consider(optimum);
         heap.push({cost,u,v,revision[u],revision[v],best});
     }
     bool valid(const Candidate& c,std::set<std::size_t>& affected,std::size_t& removed) const {
@@ -133,9 +157,10 @@ class Engine {
         return true;
     }
 public:
-    explicit Engine(const Mesh& input):mesh(input),quadrics(input.vertices.size()),incident(input.vertices.size()),
+    explicit Engine(const Mesh& input,const SimplifyOptions& settings):mesh(input),quadrics(input.vertices.size()),incident(input.vertices.size()),
         alive(input.triangles.size(),true),locked(input.vertices.size(),false),revision(input.vertices.size(),0),
-        remaining(input.triangles.size()),original_center(center(input)),original_diagonal(diagonal(input)) {
+        remaining(input.triangles.size()),original_center(center(input)),original_diagonal(diagonal(input)),
+        options(settings),feature_vertex(input.vertices.size(),false) {
         normalize(mesh);
         std::map<Edge,std::pair<int,int>> edges;
         std::set<Triangle> unique;
@@ -177,10 +202,58 @@ public:
             }
             if(visited.size()!=link.size()) throw std::runtime_error("Non-manifold vertex with disconnected face fans");
         }
+        if(options.feature_aware) {
+            const double radians=std::acos(-1.0)/180;
+            const double threshold=std::cos(options.feature_angle_degrees*radians);
+            std::vector<std::set<std::size_t>> feature_neighbors(mesh.vertices.size());
+            for(const auto& item:edges) if(item.second.first==2) {
+                const auto [u,v]=item.first;
+                std::vector<Vec3> normals;
+                for(auto f:incident[u]) {
+                    const auto& t=mesh.triangles[f];
+                    if(std::find(t.begin(),t.end(),v)==t.end()) continue;
+                    auto n=cross(sub(mesh.vertices[t[1]],mesh.vertices[t[0]]),sub(mesh.vertices[t[2]],mesh.vertices[t[0]]));
+                    const auto norm=length(n);
+                    for(auto& x:n) x/=norm;
+                    normals.push_back(n);
+                }
+                if(dot(normals[0],normals[1])>threshold) continue;
+                creases.insert(item.first);
+                feature_neighbors[u].insert(v); feature_neighbors[v].insert(u);
+                feature_vertex[u]=feature_vertex[v]=true;
+                auto tangent=sub(mesh.vertices[v],mesh.vertices[u]);
+                const double norm=length(tangent);
+                for(auto& x:tangent) x/=norm;
+                // Each plane contains the crease and is perpendicular to an
+                // adjacent face. Their quadrics penalize motion away from it.
+                for(const auto& face_normal:normals) {
+                    auto n=cross(tangent,face_normal);
+                    const double scale=std::sqrt(options.feature_weight)/length(n);
+                    for(auto& x:n) x*=scale;
+                    const double d=-dot(n,mesh.vertices[u]);
+                    quadrics[u].plane(n,d); quadrics[v].plane(n,d);
+                }
+            }
+            crease_count=creases.size();
+            for(std::size_t v=0;v<feature_neighbors.size();++v) {
+                const auto& n=feature_neighbors[v];
+                if(n.empty()) continue;
+                bool corner=n.size()!=2;
+                if(!corner) {
+                    const auto a=sub(mesh.vertices[*n.begin()],mesh.vertices[v]);
+                    const auto b=sub(mesh.vertices[*n.rbegin()],mesh.vertices[v]);
+                    // Protect turns over 30 degrees from a straight chain.
+                    corner=dot(a,b)/(length(a)*length(b))>-std::cos(30*radians);
+                }
+                if(corner) { locked[v]=true; ++corner_count; }
+            }
+        }
         for(const auto& item:edges) enqueue(item.first.first,item.first.second);
     }
     SimplifyResult run(std::size_t target) {
         SimplifyResult result;
+        result.original_crease_edges=crease_count;
+        result.protected_corners=corner_count;
         while(remaining>target && !heap.empty()) {
             auto c=heap.top(); heap.pop();
             if(c.ru!=revision[c.u] || c.rv!=revision[c.v]) continue;
@@ -198,6 +271,18 @@ public:
             }
             mesh.vertices[c.u]=c.position;
             quadrics[c.u]=quadrics[c.u]+quadrics[c.v];
+            if(feature_vertex[c.v]) {
+                // Update only the crease edges at the removed endpoint.
+                std::vector<Edge> replace;
+                for(auto x:nv) if(creases.count(edge(c.v,x))) replace.push_back(edge(c.v,x));
+                for(const auto& e:replace) {
+                    creases.erase(e);
+                    const auto other=e.first==c.v ? e.second : e.first;
+                    if(other!=c.u) creases.insert(edge(c.u,other));
+                }
+                feature_vertex[c.u]=true;
+                feature_vertex[c.v]=false;
+            }
             ++result.collapses;
             for(auto x:changed) ++revision[x];
             std::set<Edge> refresh;
@@ -223,10 +308,13 @@ public:
     }
 };
 }
-SimplifyResult simplify(const Mesh& mesh,std::size_t target) {
+SimplifyResult simplify(const Mesh& mesh,std::size_t target,const SimplifyOptions& options) {
     if(target<1 || target>mesh.triangles.size()) throw std::runtime_error("Triangle target must be between 1 and the input triangle count");
     const auto start=std::chrono::steady_clock::now();
-    Engine engine(mesh);
+    if(!std::isfinite(options.feature_angle_degrees) || options.feature_angle_degrees<=0 || options.feature_angle_degrees>=180 ||
+       !std::isfinite(options.feature_weight) || options.feature_weight<0 || options.feature_weight>1e6)
+        throw std::runtime_error("Feature angle must be in (0,180) and weight in [0,1000000]");
+    Engine engine(mesh,options);
     auto result=engine.run(target);
     result.elapsed_seconds=std::chrono::duration<double>(std::chrono::steady_clock::now()-start).count();
     return result;
