@@ -8,7 +8,7 @@ def face_normals(vertices, faces):
     return normals/np.linalg.norm(normals,axis=1)[:,None]
 
 
-def crease_segments(vertices, faces, angle=45):
+def crease_segments(vertices, faces, angle=45, boundary_only=False):
     if not np.isfinite(angle) or not 0<angle<180:
         raise ValueError("Feature angle must be in (0,180)")
     normals = face_normals(vertices,faces)
@@ -17,7 +17,7 @@ def crease_segments(vertices, faces, angle=45):
         for a,b in zip(face,np.roll(face,-1)):
             incidence.setdefault(tuple(sorted((int(a),int(b)))),[]).append(i)
     threshold = np.cos(np.deg2rad(angle))
-    edges = [e for e,fs in incidence.items() if len(fs)==2 and np.dot(normals[fs[0]],normals[fs[1]])<=threshold]
+    edges = [e for e,fs in incidence.items() if (len(fs)==1 if boundary_only else len(fs)==2 and np.dot(normals[fs[0]],normals[fs[1]])<=threshold)]
     return vertices[np.asarray(edges,dtype=int)] if edges else np.empty((0,2,3))
 
 
@@ -47,17 +47,19 @@ def segment_distances(points,segments):
     return output
 
 
-def feature_errors(ov,of,sv,sf,count,seed,angle):
+def feature_errors(ov,of,sv,sf,count,seed,angle,boundary_only=False):
     from .evaluate import statistics
-    original,candidate = crease_segments(ov,of,angle),crease_segments(sv,sf,angle)
+    original,candidate = crease_segments(ov,of,angle,boundary_only),crease_segments(sv,sf,angle,boundary_only)
+    edge_name="boundary_edges" if boundary_only else "crease_edges"
     report = {"angle_degrees":angle,"samples_per_direction":count,
-              "original_crease_edges":len(original),"candidate_crease_edges":len(candidate),
+              f"original_{edge_name}":len(original),f"candidate_{edge_name}":len(candidate),
               "original_length_normalized":float(np.linalg.norm(original[:,1]-original[:,0],axis=1).sum()),
               "candidate_length_normalized":float(np.linalg.norm(candidate[:,1]-candidate[:,0],axis=1).sum()),
               "original_to_candidate":None,"candidate_to_original":None,"worst_direction_p95":None}
     if not len(original) or not len(candidate):
         report["status"] = ("not_applicable" if not len(original) and not len(candidate) else
-                            "missing_candidate_features" if len(original) else "introduced_candidate_features")
+                            ("missing_candidate_boundary" if boundary_only else "missing_candidate_features") if len(original) else
+                            ("introduced_candidate_boundary" if boundary_only else "introduced_candidate_features"))
         return report
     a,b = np.random.SeedSequence([seed,8675309]).spawn(2)
     report["original_to_candidate"] = statistics(segment_distances(sample_segments(original,count,np.random.default_rng(a)),candidate))

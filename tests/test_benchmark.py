@@ -99,6 +99,21 @@ class BenchmarkTests(unittest.TestCase):
             self.assertEqual(optimization["method"],row["method"])
             self.assertEqual(optimization["maximum_face_weight"],1)
 
+    def test_boundary_method_reports_policy_and_metrics(self):
+        from test_boundary import grid
+        from test_simplification import write_mesh
+        write_mesh(self.source,*grid())
+        result=self.run_command("--methods","standard","boundary","--feature-samples","100","--retain","0.125")
+        self.assertEqual(result.returncode,0,result.stderr)
+        report=json.loads((self.output/"benchmark.json").read_text())
+        self.assertEqual(len(report["rows"]),4)
+        for row in report["rows"]:
+            self.assertEqual(row["boundary_status"],"measured")
+            self.assertIsNotNone(row["boundary_p95"])
+            if row["method"]=="boundary":
+                self.assertEqual(row["boundary_policy"],"constrained_boundary_chain")
+                self.assertGreater(row["boundary_collapses"],0)
+
     @unittest.skipIf(importlib.util.find_spec("fast_simplification"),"Reference installed; missing-dependency check not applicable")
     def test_unavailable_external_method_is_a_failure_not_a_fake_result(self):
         result = self.run_command("--methods","standard","fast","--feature-samples","0")

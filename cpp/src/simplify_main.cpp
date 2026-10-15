@@ -4,10 +4,30 @@
 #include <iostream>
 #include <stdexcept>
 #include <string>
+#ifndef __VERSION__
+#define __VERSION__ "compiler version unavailable"
+#endif
+#if defined(__APPLE__) || defined(__unix__)
+#include <sys/resource.h>
+#endif
+
+long long peak_rss_bytes() {
+#if defined(__APPLE__) || defined(__unix__)
+    rusage usage{};
+    if(getrusage(RUSAGE_SELF,&usage)!=0) return -1;
+#if defined(__APPLE__)
+    return usage.ru_maxrss;
+#else
+    return static_cast<long long>(usage.ru_maxrss)*1024;
+#endif
+#else
+    return -1;
+#endif
+}
 
 int main(int argc,char** argv) {
     try {
-        const std::string usage="assetq-simplify INPUT.obj --target TRIANGLES --export OUTPUT.obj --report RESULT.json [--method standard|feature|curvature|combined] [--feature-angle 45] [--feature-weight 10] [--curvature-strength 4]";
+        const std::string usage="assetq-simplify INPUT.obj --target TRIANGLES --export OUTPUT.obj --report RESULT.json [--method standard|feature|curvature|combined] [--feature-angle 45] [--feature-weight 10] [--curvature-strength 4] [--boundary-policy lock|chain] [--queue-refresh tree|sorted] [--profile on|off]";
         if(argc==2 && std::string(argv[1])=="--help") { std::cout<<usage<<'\n'; return 0; }
         if(argc<8) throw std::runtime_error("Usage: "+usage);
         std::filesystem::path input=argv[1],output,report;
@@ -19,6 +39,18 @@ int main(int argc,char** argv) {
             const std::string value=argv[++i];
             if(arg=="--export") output=value;
             else if(arg=="--report") report=value;
+            else if(arg=="--profile") {
+                if(value!="on" && value!="off") throw std::runtime_error("Profile must be on or off");
+                options.profile=value=="on";
+            }
+            else if(arg=="--queue-refresh") {
+                if(value!="tree" && value!="sorted") throw std::runtime_error("Queue refresh must be tree or sorted");
+                options.sorted_refresh=value=="sorted";
+            }
+            else if(arg=="--boundary-policy") {
+                if(value!="lock" && value!="chain") throw std::runtime_error("Boundary policy must be lock or chain");
+                options.boundary_chain=value=="chain";
+            }
             else if(arg=="--method") {
                 if(value!="standard" && value!="feature" && value!="curvature" && value!="combined") throw std::runtime_error("Method must be standard, feature, curvature, or combined");
                 options.feature_aware=value=="feature" || value=="combined";
@@ -75,9 +107,37 @@ int main(int argc,char** argv) {
            <<",\n  \"rejected_candidates\": "<<result.rejected_candidates
            <<",\n  \"target_reached\": "<<(result.target_reached?"true":"false")
            <<",\n  \"stop_reason\": \""<<(result.target_reached?"target_reached":"no_valid_collapse_within_budget")<<"\""
-           <<",\n  \"boundary_policy\": \"lock_boundary_vertices\""
+           <<",\n  \"boundary_policy\": \""<<(options.boundary_chain?"constrained_boundary_chain":"lock_boundary_vertices")<<"\""
+           <<",\n  \"original_boundary_edges\": "<<result.original_boundary_edges
+           <<",\n  \"protected_boundary_corners\": "<<result.boundary_corners
+           <<",\n  \"boundary_collapses\": "<<result.boundary_collapses
+           <<",\n  \"boundary_plane_weight\": "<<(options.boundary_chain?10:0)
+           <<",\n  \"boundary_corner_turn_degrees\": 30"
            <<",\n  \"minimum_normal_cosine\": 0.2"
            <<",\n  \"elapsed_seconds\": "<<result.elapsed_seconds
+           <<",\n  \"compiler\": "<<std::quoted(__VERSION__)
+           <<",\n  \"queue_refresh\": \""<<(options.sorted_refresh?"sorted":"tree")<<"\""
+           <<",\n  \"peak_process_rss_bytes\": ";
+        const auto rss=peak_rss_bytes();
+        if(rss<0) out<<"null"; else out<<rss;
+        out<<",\n  \"profile\": ";
+        if(!options.profile) out<<"null";
+        else {
+            const auto& p=result.profile;
+            out<<"{\"mesh_setup_seconds\":"<<p.mesh_setup_seconds
+               <<",\"curvature_seconds\":"<<p.curvature_seconds
+               <<",\"boundary_seconds\":"<<p.boundary_seconds
+               <<",\"feature_seconds\":"<<p.feature_seconds
+               <<",\"initial_queue_seconds\":"<<p.initial_queue_seconds
+               <<",\"queue_pop_seconds\":"<<p.queue_pop_seconds
+               <<",\"validation_seconds\":"<<p.validation_seconds
+               <<",\"mesh_update_seconds\":"<<p.mesh_update_seconds
+               <<",\"queue_refresh_seconds\":"<<p.queue_refresh_seconds
+               <<",\"compaction_seconds\":"<<p.compaction_seconds
+               <<",\"queue_pushes\":"<<p.queue_pushes<<",\"queue_pops\":"<<p.queue_pops
+               <<",\"stale_pops\":"<<p.stale_pops<<",\"max_queue_entries\":"<<p.max_queue_entries<<"}";
+        }
+        out
            <<",\n  \"input_file_size_bytes\": "<<std::filesystem::file_size(input)
            <<",\n  \"output_file_size_bytes\": "<<std::filesystem::file_size(output)<<"\n}\n";
         out.close();

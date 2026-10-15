@@ -108,6 +108,7 @@ def evaluate(original, simplified, samples=100000, seed=42, device="cpu", featur
             "normal_deviation_degrees":normals,
             "worst_direction_normal_p95_degrees":max(s["p95"] for s in normals.values()),
             "feature_metrics":feature_errors(ov,of,sv,sf,feature_samples,seed,feature_angle) if feature_samples else None,
+            "boundary_metrics":feature_errors(ov,of,sv,sf,feature_samples,seed,feature_angle,True) if feature_samples else None,
             "worst_direction_p95_normalized": max(normalized[k]["p95"] for k in ("original_to_simplified","simplified_to_original")),
             "elapsed_seconds": time.perf_counter()-start,
             "limitations": ["Sampled estimates; sampled_max is not exact Hausdorff distance",

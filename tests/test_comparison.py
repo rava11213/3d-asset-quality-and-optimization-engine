@@ -17,6 +17,16 @@ class ComparisonTests(unittest.TestCase):
         s = np.array([[[0,0,0],[1,0,0]]],dtype=float)
         np.testing.assert_allclose(segment_distances(p,s),[1,0,1])
 
+    def test_boundary_metric_has_known_offset(self):
+        import numpy as np
+        from assetq.feature_metrics import feature_errors
+        v=np.array([[0,0,0],[1,0,0],[0,1,0]],dtype=float)
+        f=np.array([[0,1,2]])
+        r=feature_errors(v,f,v+np.array([0,0,1]),f,500,42,45,True)
+        self.assertEqual(r["original_boundary_edges"],3)
+        self.assertEqual(r["candidate_boundary_edges"],3)
+        self.assertAlmostEqual(r["worst_direction_p95"],1)
+
     def test_feature_network_statuses_and_distance(self):
         import numpy as np
         from assetq.feature_metrics import feature_errors

@@ -335,3 +335,120 @@ two smooth radial bumps. It is a synthetic diagnostic input, not an AI-generated
 production asset. Compare original geometry, weights, and multiple metrics before
 claiming better detail preservation. A single strength is not an optimized parameter
 search; separate held-out assets would be needed to establish generalization.
+
+## Constrained open-boundary reduction
+
+Original boundary vertices stay locked by default. After rebuilding, enable
+controlled chain reduction with `--boundary-policy chain` on `simplify` or the
+C++ executable. This works with standard, feature, curvature, and combined QEM.
+
+```sh
+PYTHONPATH=python .venv/bin/python -m assetq.examples outputs/boundary-inputs/open-hole.obj --shape open-hole
+PYTHONPATH=python .venv/bin/python -m assetq simplify outputs/boundary-inputs/open-hole.obj --output-dir outputs/hole-chain --boundary-policy chain
+PYTHONPATH=python .venv/bin/python -m assetq benchmark outputs/boundary-inputs/open-hole.obj --output-dir outputs/new-boundary-run --methods standard boundary --retain 0.5 0.25 --seeds 42 43
+```
+
+The benchmark alias `boundary` selects standard QEM with chain reduction; other
+benchmark methods retain locked boundaries. Other open diagnostic generators are
+`open-plane`, `open-strip`, and `open-curved`.
+
+Original boundary turns over 30 degrees are locked as corners. Only neighboring
+boundary vertices may collapse together, with their replacement constrained to
+the current edge segment. Interior-to-boundary merges are excluded. Original
+planes containing open edges and perpendicular to adjacent faces add fixed
+weight-10 penalties, **after** curvature weighting. Costs accumulate through
+collapses. Corner detection is static, not recomputed after every change. Edges
+incident to locked corners are excluded, retaining some extra nearby vertices.
+
+Boundary collapses remove one face; interior collapses remove two. Both obey the
+no-overshoot budget rule. The implementation checks edge links, duplicate faces,
+degeneracy, normal changes, and complete post-collapse face-fan connectivity and
+degrees around touched vertices. It remaps boundary connectivity and refuses to
+collapse three-edge loops. Invalid input junctions/fans are rejected by the input
+validator. These checks protect local manifold topology, not global intersections.
+Curved outlines may shorten or move; there is no continuous outline-error bound.
+
+Reports record policy, original edge count, protected boundary corners, collapse
+count, plane weight, and corner threshold. Evaluation with `--feature-samples N`
+also samples incidence-one boundary edges by length and computes bidirectional
+nearest-segment distances normalized by original diagonal. Closed meshes give N/A;
+missing/introduced boundaries are explicitly flagged instead of scored zero.
+JSON and CSV include boundary P95/status, policy, collapses, and achieved edge
+counts. Comparison plots include a boundary-error panel. Actual triangle counts
+can differ between policies; numerical comparison deltas remain null in that case.
+
+Tests cover corner positions, holes/Euler characteristic, separate patches, narrow
+strips, curved patches with combined weighting, odd budgets, closed-mesh equivalence,
+clean geometry, analytic boundary distances, and benchmark integration. A low
+boundary-distance score alone does not establish equal loop topology. Broad
+real-world open-asset validation and global self-intersection checks remain future work.
+
+## Optimizer profiling and performance trials
+
+The `performance` command measures separately from geometry-sampling benchmarks:
+
+```sh
+PYTHONPATH=python .venv/bin/python -m assetq performance outputs/sample-model/armadillo.obj --output-dir outputs/new-performance-run --retain 0.25 --variants tree sorted --warmups 1 --repeats 5 --build-label 'C++17 -O2; record your actual compiler flags'
+```
+
+It uses the local C++ executables and Matplotlib (`pip install -e '.[performance]'`),
+without requiring Warp execution. Input paths, binary hashes, compiler version,
+platform/architecture, logical CPU count, and user-supplied build label are recorded.
+Compiler flags cannot be recovered reliably from an executable; `--build-label`
+records supplied provenance rather than verifying how a binary was built.
+
+For each asset/method/budget and refresh variant, run one separately instrumented
+diagnostic execution, at least one excluded warm-up, then at least two measured
+executions (default five). Measured executions have profiling **off**. Variant
+order reverses on alternating iterations. Every execution is a fresh process:
+warm-ups warm OS/file caches, not a retained optimizer or allocator. No sampling
+seed is involved. `--timeout` bounds each child process (default 300 seconds).
+
+`--methods` supports standard, feature, curvature, combined, and boundary. These
+use their default policy weights. `--retain` supports multiple independent budgets;
+actual achieved counts are retained. A new or empty output directory is required.
+Failures/timeouts are recorded while other trials continue; exit code 1 indicates
+partial failure. The runner writes checkpointed JSON, flat trial CSV, a readable
+report, runtime/RSS plots, command logs, original/output inspections, and per-case
+meshes. Summary statistics include only successful unprofiled measured trials;
+incomplete groups show their actual trial counts. A failed case cannot receive a
+paired time ratio.
+
+C++ `--profile on` records mesh setup/validation and base quadrics, curvature
+weighting, boundary penalties, feature constraints, initial queue construction,
+queue popping, collapse validation, mesh updates, queue refresh, and output
+compaction. Initial corner classification is included in mesh setup. Stages are
+nonoverlapping; constructor allocations, local destruction, control flow, and clock
+overhead can remain unaccounted. Fine-grained clocks perturb these diagnostic
+executions; do not compare their total against unprofiled performance as a speedup.
+Queue pushes, pops, stale pops, and peak entries identify candidate churn. These
+are entry counts, not an estimate of allocated bytes. `--profile off` is the default.
+
+All simplifier reports include process peak resident memory where supported:
+macOS `getrusage` bytes; Linux KiB converted to bytes; null elsewhere. This is the
+child process's lifetime high-water mark, including input/output mesh storage,
+runtime, and allocator pages. It is not incremental optimizer-only memory or a
+per-stage memory profile. Optimizer time excludes input/output and engine teardown;
+the runner also records total child wall time including startup and I/O.
+
+Two refresh implementations allow an isolated comparison: `--queue-refresh tree`
+uses the previous temporary ordered set; `sorted` collects edges in a contiguous
+vector, sorts them, and removes duplicates. Both enqueue the same lexicographic
+edge sequence. The optimization targets refresh allocation/bookkeeping, not the
+stale priority-queue policy. The runner checks exact OBJ hashes across every
+profile, warm-up, repeat, and variant before accepting results. Profile exports
+also pass geometry diagnostics. Identical output bytes establish unchanged
+geometry for tested cases without adding sampling noise to the comparison.
+
+Sorted refresh is now the default in both the C++ executable and Python `simplify`.
+Use `--queue-refresh tree` to reproduce the previous bookkeeping path. This does
+not change QEM costs, collapse checks, boundary policy, or triangle budgets.
+
+Reports show medians, min/max, and interquartile ranges for optimizer time, process
+wall time, and RSS. A tree/sorted median-time ratio greater than one favors sorted
+refresh, but is not a confidence interval or a claim across hardware/assets.
+Hardware load and thermal state are uncontrolled. To study size sensitivity with
+a common procedural family, generate bumped spheres with `assetq.examples --shape
+bumped-sphere --levels 3` through `--levels 6`. A comparison against Armadillo is a
+different asset, not a point proving asymptotic scaling. Report plots use points
+without asserting a fitted complexity law.

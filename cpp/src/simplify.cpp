@@ -11,6 +11,12 @@
 
 namespace assetq {
 namespace {
+using Clock=std::chrono::steady_clock;
+struct Timer {
+    bool enabled; double& seconds; Clock::time_point start;
+    Timer(bool active,double& target):enabled(active),seconds(target),start(active?Clock::now():Clock::time_point{}) {}
+    ~Timer() { if(enabled) seconds+=std::chrono::duration<double>(Clock::now()-start).count(); }
+};
 using Edge = std::pair<std::size_t, std::size_t>;
 Edge edge(std::size_t a, std::size_t b) { return {std::min(a,b), std::max(a,b)}; }
 Vec3 sub(const Vec3& a, const Vec3& b) { return {a[0]-b[0],a[1]-b[1],a[2]-b[2]}; }
@@ -85,6 +91,9 @@ class Engine {
     std::vector<bool> feature_vertex;
     std::size_t crease_count=0, corner_count=0;
     double curvature_reference=0, minimum_weight=1, maximum_weight=1, mean_weight=1;
+    std::vector<std::set<std::size_t>> boundary;
+    std::size_t boundary_count=0, boundary_corner_count=0;
+    OptimizerProfile profile;
 
     std::set<std::size_t> neighbors(std::size_t v) const {
         std::set<std::size_t> n;
@@ -94,6 +103,8 @@ class Engine {
     void enqueue(std::size_t u,std::size_t v) {
         if(u>v) std::swap(u,v);
         if(locked[u] || locked[v] || incident[u].empty() || incident[v].empty()) return;
+        const bool boundary_edge=boundary[u].count(v)!=0;
+        if((!boundary[u].empty() || !boundary[v].empty()) && !boundary_edge) return;
         const bool feature_edge=creases.count(edge(u,v))!=0;
         // Keep smooth collapses away from the original crease network. A crease
         // can shorten only along itself; it cannot merge into a neighboring patch.
@@ -106,7 +117,7 @@ class Engine {
         auto consider=[&](const Vec3& p) { const double c=q.cost(p); if(c<cost) { best=p; cost=c; } };
         consider(b); consider(mid);
         Vec3 optimum{};
-        if(feature_edge) {
+        if(feature_edge || boundary_edge) {
             // Minimize the quadratic on p(t)=a+t(b-a), 0<=t<=1.
             const auto direction=sub(b,a);
             double aa=0,bb=0;
@@ -124,6 +135,7 @@ class Engine {
             }
         } else if(q.optimum(optimum)) consider(optimum);
         heap.push({cost,u,v,revision[u],revision[v],best});
+        if(options.profile) { ++profile.queue_pushes; profile.max_queue_entries=std::max(profile.max_queue_entries,heap.size()); }
     }
     bool valid(const Candidate& c,std::set<std::size_t>& affected,std::size_t& removed) const {
         const auto nu=neighbors(c.u), nv=neighbors(c.v);
@@ -138,8 +150,14 @@ class Engine {
                 for(auto x:t) if(x!=c.u && x!=c.v) opposite.insert(x);
             }
         }
-        // Both endpoints are interior; the manifold edge link has exactly two vertices.
-        if(removed!=2 || common!=opposite || opposite.size()!=2) return false;
+        const bool boundary_edge=boundary[c.u].count(c.v)!=0;
+        const std::size_t expected=boundary_edge?1:2;
+        if(removed!=expected || common!=opposite || opposite.size()!=expected) return false;
+        if(boundary_edge) {
+            if(boundary[c.u].size()!=2 || boundary[c.v].size()!=2) return false;
+            auto a=boundary[c.u], b=boundary[c.v]; a.erase(c.v); b.erase(c.u);
+            if(*a.begin()==*b.begin()) return false; // Never collapse a three-edge loop.
+        }
         std::set<Triangle> unique;
         for(auto f:affected) {
             const auto& t=mesh.triangles[f];
@@ -155,13 +173,51 @@ class Engine {
             // Bound each local normal change to acos(0.2), and reject near-zero faces.
             if(b<=1e-12 || dot(before,after)<=0.2*a*b) return false;
         }
+        if(boundary_edge) {
+            // Check complete post-collapse face fans around every touched vertex.
+            // An edge link check alone is insufficient around open components.
+            std::set<std::size_t> touched;
+            for(auto f:affected) for(auto x:mesh.triangles[f]) touched.insert(x==c.v?c.u:x);
+            for(auto x:touched) {
+                auto fs=incident[x];
+                if(x==c.u) fs.insert(incident[c.v].begin(),incident[c.v].end());
+                std::map<std::size_t,std::set<std::size_t>> link;
+                for(auto f:fs) {
+                    auto t=mesh.triangles[f];
+                    for(auto& y:t) if(y==c.v) y=c.u;
+                    if(t[0]==t[1] || t[1]==t[2] || t[0]==t[2]) continue;
+                    std::vector<std::size_t> other;
+                    for(auto y:t) if(y!=x) other.push_back(y);
+                    if(other.size()!=2) return false;
+                    link[other[0]].insert(other[1]); link[other[1]].insert(other[0]);
+                }
+                if(link.empty()) return false;
+                int endpoints=0;
+                for(const auto& e:link) {
+                    if(e.second.size()==1) ++endpoints;
+                    else if(e.second.size()!=2) return false;
+                }
+                const bool on_boundary=!boundary[x].empty();
+                if(endpoints!=(on_boundary?2:0)) return false;
+                std::set<std::size_t> visited;
+                std::vector<std::size_t> stack{link.begin()->first};
+                while(!stack.empty()) {
+                    auto y=stack.back(); stack.pop_back();
+                    if(!visited.insert(y).second) continue;
+                    for(auto z:link[y]) stack.push_back(z);
+                }
+                if(visited.size()!=link.size()) return false;
+            }
+        }
         return true;
     }
 public:
     explicit Engine(const Mesh& input,const SimplifyOptions& settings):mesh(input),quadrics(input.vertices.size()),incident(input.vertices.size()),
         alive(input.triangles.size(),true),locked(input.vertices.size(),false),revision(input.vertices.size(),0),
         remaining(input.triangles.size()),original_center(center(input)),original_diagonal(diagonal(input)),
-        options(settings),feature_vertex(input.vertices.size(),false) {
+        options(settings),feature_vertex(input.vertices.size(),false),boundary(input.vertices.size()) {
+        auto phase_start=options.profile?Clock::now():Clock::time_point{};
+        auto mark=[&](double& seconds) { if(options.profile) { auto now=Clock::now(); seconds+=std::chrono::duration<double>(now-phase_start).count(); phase_start=now; } };
         normalize(mesh);
         std::map<Edge,std::pair<int,int>> edges;
         std::set<Triangle> unique;
@@ -182,7 +238,11 @@ public:
         for(const auto& item:edges) {
             const auto [count,balance]=item.second;
             if(count>2 || (count==2 && balance!=0)) throw std::runtime_error("Simplification requires manifold edges and consistent winding");
-            if(count==1) for(auto v:{item.first.first,item.first.second}) { locked[v]=true; ++boundary_degree[v]; }
+            if(count==1) {
+                const auto [u,v]=item.first;
+                boundary[u].insert(v); boundary[v].insert(u); ++boundary_count;
+                for(auto x:{u,v}) { locked[x]=!options.boundary_chain; ++boundary_degree[x]; }
+            }
         }
         // An edge-manifold mesh can still have disconnected face fans at a vertex.
         for(std::size_t v=0;v<incident.size();++v) {
@@ -203,6 +263,18 @@ public:
             }
             if(visited.size()!=link.size()) throw std::runtime_error("Non-manifold vertex with disconnected face fans");
         }
+        if(options.boundary_chain) {
+            const double cosine=std::cos(std::acos(-1.0)/6);
+            for(std::size_t v=0;v<boundary.size();++v) if(!boundary[v].empty()) {
+                const auto& n=boundary[v];
+                const auto a=sub(mesh.vertices[*n.begin()],mesh.vertices[v]);
+                const auto b=sub(mesh.vertices[*n.rbegin()],mesh.vertices[v]);
+                if(n.size()!=2 || dot(a,b)/(length(a)*length(b))>-cosine) {
+                    locked[v]=true; ++boundary_corner_count;
+                }
+            }
+        }
+        mark(profile.mesh_setup_seconds);
         if(options.curvature_weighted && options.curvature_strength>0) {
             // Static original-surface normal variation, not a claim of exact
             // differential curvature. Each interior edge contributes to its two faces.
@@ -250,6 +322,23 @@ public:
                 mean_weight/=mesh.triangles.size();
             }
         }
+        mark(profile.curvature_seconds);
+        if(options.boundary_chain) {
+            // Original boundary planes penalize movement away from open edges.
+            for(const auto& item:edges) if(item.second.first==1) {
+                const auto [u,v]=item.first;
+                for(auto f:incident[u]) {
+                    const auto& t=mesh.triangles[f];
+                    if(std::find(t.begin(),t.end(),v)==t.end()) continue;
+                    auto n=cross(sub(mesh.vertices[t[1]],mesh.vertices[t[0]]),sub(mesh.vertices[t[2]],mesh.vertices[t[0]]));
+                    n=cross(sub(mesh.vertices[v],mesh.vertices[u]),n);
+                    const double scale=std::sqrt(10.0)/length(n);
+                    for(auto& x:n) x*=scale;
+                    for(auto x:{u,v}) quadrics[x].plane(n,-dot(n,mesh.vertices[u]));
+                }
+            }
+        }
+        mark(profile.boundary_seconds);
         if(options.feature_aware) {
             const double radians=std::acos(-1.0)/180;
             const double threshold=std::cos(options.feature_angle_degrees*radians);
@@ -296,7 +385,9 @@ public:
                 if(corner) { locked[v]=true; ++corner_count; }
             }
         }
+        mark(profile.feature_seconds);
         for(const auto& item:edges) enqueue(item.first.first,item.first.second);
+        mark(profile.initial_queue_seconds);
     }
     SimplifyResult run(std::size_t target) {
         SimplifyResult result;
@@ -306,13 +397,29 @@ public:
         result.minimum_face_weight=minimum_weight;
         result.maximum_face_weight=maximum_weight;
         result.mean_face_weight=mean_weight;
+        result.original_boundary_edges=boundary_count;
+        result.boundary_corners=boundary_corner_count;
         while(remaining>target && !heap.empty()) {
-            auto c=heap.top(); heap.pop();
-            if(c.ru!=revision[c.u] || c.rv!=revision[c.v]) continue;
+            Candidate c;
+            {
+                Timer timer(options.profile,profile.queue_pop_seconds);
+                c=heap.top(); heap.pop();
+                if(options.profile) ++profile.queue_pops;
+                if(c.ru!=revision[c.u] || c.rv!=revision[c.v]) {
+                    if(options.profile) ++profile.stale_pops;
+                    continue;
+                }
+            }
             std::set<std::size_t> affected;
             std::size_t removed=0;
-            if(!valid(c,affected,removed) || remaining-removed<target) { ++result.rejected_candidates; continue; }
-            auto changed=neighbors(c.u); const auto nv=neighbors(c.v);
+            {
+                Timer timer(options.profile,profile.validation_seconds);
+                if(!valid(c,affected,removed) || remaining-removed<target) { ++result.rejected_candidates; continue; }
+            }
+            std::set<std::size_t> changed;
+            {
+            Timer timer(options.profile,profile.mesh_update_seconds);
+            changed=neighbors(c.u); const auto nv=neighbors(c.v);
             changed.insert(nv.begin(),nv.end()); changed.insert(c.u); changed.insert(c.v);
             for(auto f:affected) {
                 auto& t=mesh.triangles[f];
@@ -323,6 +430,16 @@ public:
             }
             mesh.vertices[c.u]=c.position;
             quadrics[c.u]=quadrics[c.u]+quadrics[c.v];
+            if(boundary[c.u].count(c.v)) {
+                auto neighbors=boundary[c.v];
+                boundary[c.u].erase(c.v);
+                for(auto x:neighbors) {
+                    boundary[x].erase(c.v);
+                    if(x!=c.u) { boundary[x].insert(c.u); boundary[c.u].insert(x); }
+                }
+                boundary[c.v].clear();
+                ++result.boundary_collapses;
+            }
             if(feature_vertex[c.v]) {
                 // Update only the crease edges at the removed endpoint.
                 std::vector<Edge> replace;
@@ -336,11 +453,24 @@ public:
                 feature_vertex[c.v]=false;
             }
             ++result.collapses;
+            }
+            Timer refresh_timer(options.profile,profile.queue_refresh_seconds);
             for(auto x:changed) ++revision[x];
-            std::set<Edge> refresh;
-            for(auto x:changed) for(auto y:neighbors(x)) refresh.insert(edge(x,y));
-            for(const auto& e:refresh) enqueue(e.first,e.second);
+            if(options.sorted_refresh) {
+                std::vector<Edge> refresh;
+                refresh.reserve(changed.size()*8);
+                for(auto x:changed) for(auto y:neighbors(x)) refresh.push_back(edge(x,y));
+                std::sort(refresh.begin(),refresh.end());
+                refresh.erase(std::unique(refresh.begin(),refresh.end()),refresh.end());
+                for(const auto& e:refresh) enqueue(e.first,e.second);
+            } else {
+                std::set<Edge> refresh;
+                for(auto x:changed) for(auto y:neighbors(x)) refresh.insert(edge(x,y));
+                for(const auto& e:refresh) enqueue(e.first,e.second);
+            }
         }
+        {
+        Timer timer(options.profile,profile.compaction_seconds);
         std::vector<std::size_t> remap(mesh.vertices.size(),std::numeric_limits<std::size_t>::max());
         for(std::size_t f=0;f<alive.size();++f) if(alive[f]) {
             auto t=mesh.triangles[f];
@@ -355,6 +485,8 @@ public:
             }
             result.mesh.triangles.push_back(t);
         }
+        }
+        result.profile=profile;
         result.target_reached=remaining==target;
         return result;
     }

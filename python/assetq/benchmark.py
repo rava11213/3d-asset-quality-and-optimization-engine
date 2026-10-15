@@ -54,7 +54,9 @@ def summarize(rows, seeds):
                        "mean_pooled_error":sum(r["mean"] for r in group)/len(group),
                        "normal_p95_degrees":max(r.get("normal_p95_degrees",0) for r in group),
                        "feature_statuses":sorted({r.get("feature_status","disabled") for r in group}),
-                       "feature_p95":max((r["feature_p95"] for r in group if r.get("feature_p95") is not None),default=None)})
+                       "feature_p95":max((r["feature_p95"] for r in group if r.get("feature_p95") is not None),default=None),
+                       "boundary_statuses":sorted({r.get("boundary_status","disabled") for r in group}),
+                       "boundary_p95":max((r["boundary_p95"] for r in group if r.get("boundary_p95") is not None),default=None)})
     return points
 
 
@@ -81,7 +83,8 @@ def matched_comparisons(points):
                        "matched_complete":eligible,
                        "surface_p95_delta":p["worst_seed_direction_p95"]-b["worst_seed_direction_p95"] if eligible else None,
                        "normal_p95_degrees_delta":p["normal_p95_degrees"]-b["normal_p95_degrees"] if eligible else None,
-                       "feature_p95_delta":p["feature_p95"]-b["feature_p95"] if eligible and p["feature_p95"] is not None and b["feature_p95"] is not None else None})
+                       "feature_p95_delta":p["feature_p95"]-b["feature_p95"] if eligible and p["feature_p95"] is not None and b["feature_p95"] is not None else None,
+                       "boundary_p95_delta":p["boundary_p95"]-b["boundary_p95"] if eligible and p["boundary_p95"] is not None and b["boundary_p95"] is not None else None})
     return output
 
 
@@ -89,9 +92,10 @@ def plot_methods(points,output):
     assets = sorted({p["asset_id"] for p in points})
     if not assets:
         return
-    fig,axes = plt.subplots(len(assets),3,figsize=(14,3.5*len(assets)),squeeze=False,layout="constrained")
+    fig,axes = plt.subplots(len(assets),4,figsize=(18,3.5*len(assets)),squeeze=False,layout="constrained")
     metrics = [("worst_seed_direction_p95",100,"Surface P95 (% diagonal)"),
-               ("normal_p95_degrees",1,"Normal P95 (degrees)"),("feature_p95",100,"Crease P95 (% diagonal)")]
+               ("normal_p95_degrees",1,"Normal P95 (degrees)"),("feature_p95",100,"Crease P95 (% diagonal)"),
+               ("boundary_p95",100,"Boundary P95 (% diagonal)")]
     for i,asset in enumerate(assets):
         for j,(key,scale,label) in enumerate(metrics):
             ax = axes[i,j]
@@ -141,10 +145,11 @@ def write_report(output, report):
              "Errors are fractions of the original bounding-box diagonal in JSON/CSV, and percentages below.",
              "P95 is the larger directional P95, then the maximum across requested seeds. Only fully evaluated budgets appear in the chart.","",
              "![Triangle reduction versus surface error](tradeoffs.png)","",
-             "| Asset | Method | Target | Achieved | Reduction | Worst P95 | Normal P95 | Crease P95 | Feature status | Seeds complete |", "|---|---|---:|---:|---:|---:|---:|---:|---|---|"]
+             "| Asset | Method | Target | Achieved | Reduction | Worst P95 | Normal P95 | Crease P95 | Boundary P95 | Feature status | Seeds complete |", "|---|---|---:|---:|---:|---:|---:|---:|---:|---|---|"]
     for p in points:
         feature = f"{p['feature_p95']*100:.6f}%" if p['feature_p95'] is not None else "N/A"
-        lines.append(f"| {p['asset_id']} | {p['method']} | {p['target_triangles']:,} | {p['achieved_triangles']:,} | {p['triangle_reduction']*100:.2f}% | {p['worst_seed_direction_p95']*100:.6f}% | {p['normal_p95_degrees']:.4f}° | {feature} | {', '.join(p['feature_statuses'])} | {p['complete']} |")
+        boundary = f"{p['boundary_p95']*100:.6f}%" if p['boundary_p95'] is not None else "N/A"
+        lines.append(f"| {p['asset_id']} | {p['method']} | {p['target_triangles']:,} | {p['achieved_triangles']:,} | {p['triangle_reduction']*100:.2f}% | {p['worst_seed_direction_p95']*100:.6f}% | {p['normal_p95_degrees']:.4f}° | {feature} | {boundary} | {', '.join(p['feature_statuses'])} | {p['complete']} |")
     if points:
         lines += ["","![Method comparisons](method-comparison.png)","",
                   "Normal errors use oriented face normals at nearest surface points. Creases are independently detected at the configured angle; missing features are N/A, not zero error.","",
@@ -230,9 +235,9 @@ def run_benchmark(args, binary, inspector):
                         command=[sys.executable,"-m","assetq.external",source,target,mesh,optimization_path]
                     else:
                         command=[binary,source,"--target",target,"--export",mesh,"--report",optimization_path,
-                                 "--method","feature" if method=="constraints" else method,
+                                 "--method","feature" if method=="constraints" else "standard" if method=="boundary" else method,
                                  "--feature-angle",args.feature_angle,"--feature-weight",0 if method=="constraints" else args.feature_weight,
-                                 "--curvature-strength",args.curvature_strength]
+                                 "--curvature-strength",args.curvature_strength,"--boundary-policy","chain" if method=="boundary" else "lock"]
                     invoke(command,directory/f"simplify-{target}-log.json")
                     optimization = json.loads(optimization_path.read_text())
                     invoke([inspector,mesh,"--report",directory/f"inspection-{target}.json"],directory/f"inspect-{target}-log.json")
@@ -258,6 +263,11 @@ def run_benchmark(args, binary, inspector):
                             "feature_status":evaluation["feature_metrics"]["status"] if evaluation["feature_metrics"] else "disabled",
                             "feature_p95":evaluation["feature_metrics"]["worst_direction_p95"] if evaluation["feature_metrics"] else None,
                             "optimization_report":str(optimization_path),
+                            "boundary_p95":evaluation["boundary_metrics"]["worst_direction_p95"] if evaluation["boundary_metrics"] else None,
+                            "boundary_status":evaluation["boundary_metrics"]["status"] if evaluation["boundary_metrics"] else "disabled",
+                            "boundary_policy":optimization.get("boundary_policy","unspecified"),
+                            "boundary_collapses":optimization.get("boundary_collapses"),
+                            "achieved_boundary_edges":geometry["boundary_edges"],
                             "degenerate_triangles":geometry["degenerate_triangles"],
                             "duplicate_triangles":geometry["duplicate_triangles"],
                             "non_manifold_edges":geometry["non_manifold_edges"],

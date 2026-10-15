@@ -54,13 +54,34 @@ def bumped_sphere(levels=4):
     return deformed,faces
 
 
+def open_patch(n=12,hole=False,strip=False,curved=False):
+    if n<6:
+        raise ValueError("Open examples require at least six subdivisions")
+    width=2 if strip else n
+    vertices=[(x,y,.4*math.sin(x*.4)*math.sin(y*.4) if curved else 0.) for y in range(n) for x in range(width)]
+    faces=[]
+    for y in range(n-1):
+        for x in range(width-1):
+            if hole and n//3<=x<2*n//3 and n//3<=y<2*n//3:
+                continue
+            a=y*width+x
+            faces.extend([(a,a+1,a+width+1),(a,a+width+1,a+width)])
+    return vertices,faces
+
+
 if __name__=="__main__":
     parser=argparse.ArgumentParser(description=__doc__)
     parser.add_argument("output",type=Path)
     parser.add_argument("--subdivisions",type=int,default=12)
-    parser.add_argument("--shape",choices=["rippled-box","bumped-sphere"],default="rippled-box")
+    parser.add_argument("--levels",type=int,choices=range(1,8),default=4,help="Octahedron refinement levels for bumped-sphere")
+    parser.add_argument("--shape",choices=["rippled-box","bumped-sphere","open-plane","open-hole","open-strip","open-curved"],default="rippled-box")
     args=parser.parse_args()
-    v,f=rippled_box(args.subdivisions) if args.shape=="rippled-box" else bumped_sphere()
+    if args.shape=="rippled-box":
+        v,f=rippled_box(args.subdivisions)
+    elif args.shape=="bumped-sphere":
+        v,f=bumped_sphere(args.levels)
+    else:
+        v,f=open_patch(args.subdivisions,hole=args.shape=="open-hole",strip=args.shape=="open-strip",curved=args.shape=="open-curved")
     args.output.parent.mkdir(parents=True,exist_ok=True)
     with args.output.open("w") as stream:
         stream.write(f"# Procedural {args.shape}; assetq.examples\n")
