@@ -1,0 +1,1692 @@
+{
+  "description": "Selected development experiment summaries; generated meshes/full runs live in ignored outputs/.",
+  "method_comparison": {
+    "config": {
+      "retain": [
+        0.75,
+        0.5,
+        0.25
+      ],
+      "samples_per_direction": 100000,
+      "seeds": [
+        42,
+        43
+      ],
+      "device": "cpu",
+      "max_p95": null,
+      "methods": [
+        "standard",
+        "constraints",
+        "feature"
+      ],
+      "feature_angle": 45,
+      "feature_weight": 10,
+      "feature_samples": 2000,
+      "selection_metric": "max_over_seeds_of_worst_direction_p95_normalized"
+    },
+    "points": [
+      {
+        "asset_id": "001-armadillo",
+        "method": "standard",
+        "target_triangles": 64861,
+        "achieved_triangles": 64862,
+        "target_reached": false,
+        "triangle_reduction": 0.24999421845008207,
+        "complete": true,
+        "successful_seeds": 2,
+        "worst_seed_direction_p95": 7.764150577713733e-05,
+        "mean_pooled_error": 2.0965969701527335e-05,
+        "normal_p95_degrees": 8.117639984001139,
+        "feature_statuses": [
+          "measured"
+        ],
+        "feature_p95": 0.01578282679003271
+      },
+      {
+        "asset_id": "001-armadillo",
+        "method": "standard",
+        "target_triangles": 43241,
+        "achieved_triangles": 43242,
+        "target_reached": false,
+        "triangle_reduction": 0.49998843690016415,
+        "complete": true,
+        "successful_seeds": 2,
+        "worst_seed_direction_p95": 0.00016282052310998522,
+        "mean_pooled_error": 5.934555583957315e-05,
+        "normal_p95_degrees": 13.905554457725547,
+        "feature_statuses": [
+          "measured"
+        ],
+        "feature_p95": 0.03902730937749119
+      },
+      {
+        "asset_id": "001-armadillo",
+        "method": "standard",
+        "target_triangles": 21620,
+        "achieved_triangles": 21620,
+        "target_reached": true,
+        "triangle_reduction": 0.7500057815499179,
+        "complete": true,
+        "successful_seeds": 2,
+        "worst_seed_direction_p95": 0.0003529550202074455,
+        "mean_pooled_error": 0.00013775485946359678,
+        "normal_p95_degrees": 19.713621797715458,
+        "feature_statuses": [
+          "measured"
+        ],
+        "feature_p95": 0.047224882958469036
+      },
+      {
+        "asset_id": "001-armadillo",
+        "method": "constraints",
+        "target_triangles": 64861,
+        "achieved_triangles": 64862,
+        "target_reached": false,
+        "triangle_reduction": 0.24999421845008207,
+        "complete": true,
+        "successful_seeds": 2,
+        "worst_seed_direction_p95": 7.818294325261372e-05,
+        "mean_pooled_error": 2.123584519472936e-05,
+        "normal_p95_degrees": 8.165874077575863,
+        "feature_statuses": [
+          "measured"
+        ],
+        "feature_p95": 0.01601094396457123
+      },
+      {
+        "asset_id": "001-armadillo",
+        "method": "constraints",
+        "target_triangles": 43241,
+        "achieved_triangles": 43242,
+        "target_reached": false,
+        "triangle_reduction": 0.49998843690016415,
+        "complete": true,
+        "successful_seeds": 2,
+        "worst_seed_direction_p95": 0.00016617326182313257,
+        "mean_pooled_error": 6.0718656979981224e-05,
+        "normal_p95_degrees": 13.886057607787443,
+        "feature_statuses": [
+          "measured"
+        ],
+        "feature_p95": 0.04387983045807517
+      },
+      {
+        "asset_id": "001-armadillo",
+        "method": "constraints",
+        "target_triangles": 21620,
+        "achieved_triangles": 21620,
+        "target_reached": true,
+        "triangle_reduction": 0.7500057815499179,
+        "complete": true,
+        "successful_seeds": 2,
+        "worst_seed_direction_p95": 0.000377103615028318,
+        "mean_pooled_error": 0.00014625010128183465,
+        "normal_p95_degrees": 19.91198949676458,
+        "feature_statuses": [
+          "measured"
+        ],
+        "feature_p95": 0.04860507372183201
+      },
+      {
+        "asset_id": "001-armadillo",
+        "method": "feature",
+        "target_triangles": 64861,
+        "achieved_triangles": 64862,
+        "target_reached": false,
+        "triangle_reduction": 0.24999421845008207,
+        "complete": true,
+        "successful_seeds": 2,
+        "worst_seed_direction_p95": 7.790326380927575e-05,
+        "mean_pooled_error": 2.121454411500866e-05,
+        "normal_p95_degrees": 8.174304674781487,
+        "feature_statuses": [
+          "measured"
+        ],
+        "feature_p95": 0.015142805632653343
+      },
+      {
+        "asset_id": "001-armadillo",
+        "method": "feature",
+        "target_triangles": 43241,
+        "achieved_triangles": 43242,
+        "target_reached": false,
+        "triangle_reduction": 0.49998843690016415,
+        "complete": true,
+        "successful_seeds": 2,
+        "worst_seed_direction_p95": 0.00016621173272142174,
+        "mean_pooled_error": 6.0866228241823556e-05,
+        "normal_p95_degrees": 13.895871968063972,
+        "feature_statuses": [
+          "measured"
+        ],
+        "feature_p95": 0.04274685470261118
+      },
+      {
+        "asset_id": "001-armadillo",
+        "method": "feature",
+        "target_triangles": 21620,
+        "achieved_triangles": 21620,
+        "target_reached": true,
+        "triangle_reduction": 0.7500057815499179,
+        "complete": true,
+        "successful_seeds": 2,
+        "worst_seed_direction_p95": 0.00037610893632518123,
+        "mean_pooled_error": 0.00014616366056670855,
+        "normal_p95_degrees": 19.959546619724676,
+        "feature_statuses": [
+          "measured"
+        ],
+        "feature_p95": 0.047477158220045036
+      },
+      {
+        "asset_id": "002-rippled-box",
+        "method": "standard",
+        "target_triangles": 1296,
+        "achieved_triangles": 1296,
+        "target_reached": true,
+        "triangle_reduction": 0.25,
+        "complete": true,
+        "successful_seeds": 2,
+        "worst_seed_direction_p95": 8.024520781191313e-08,
+        "mean_pooled_error": 4.5841096725618845e-08,
+        "normal_p95_degrees": 1.2074182697257333e-06,
+        "feature_statuses": [
+          "measured"
+        ],
+        "feature_p95": 7.850462293418876e-17
+      },
+      {
+        "asset_id": "002-rippled-box",
+        "method": "standard",
+        "target_triangles": 864,
+        "achieved_triangles": 864,
+        "target_reached": true,
+        "triangle_reduction": 0.5,
+        "complete": true,
+        "successful_seeds": 2,
+        "worst_seed_direction_p95": 1.6726511375964037e-07,
+        "mean_pooled_error": 3.8504227624465844e-08,
+        "normal_p95_degrees": 1.2074182697257333e-06,
+        "feature_statuses": [
+          "measured"
+        ],
+        "feature_p95": 8.477173730431571e-17
+      },
+      {
+        "asset_id": "002-rippled-box",
+        "method": "standard",
+        "target_triangles": 432,
+        "achieved_triangles": 432,
+        "target_reached": true,
+        "triangle_reduction": 0.75,
+        "complete": true,
+        "successful_seeds": 2,
+        "worst_seed_direction_p95": 0.000782253546640276,
+        "mean_pooled_error": 0.0001485259641993626,
+        "normal_p95_degrees": 5.291030248094062,
+        "feature_statuses": [
+          "measured"
+        ],
+        "feature_p95": 0.0005251484927480549
+      },
+      {
+        "asset_id": "002-rippled-box",
+        "method": "constraints",
+        "target_triangles": 1296,
+        "achieved_triangles": 1296,
+        "target_reached": true,
+        "triangle_reduction": 0.25,
+        "complete": true,
+        "successful_seeds": 2,
+        "worst_seed_direction_p95": 4.71216097253091e-08,
+        "mean_pooled_error": 2.3250968624506236e-08,
+        "normal_p95_degrees": 1.2074182697257333e-06,
+        "feature_statuses": [
+          "measured"
+        ],
+        "feature_p95": 3.929062510380681e-17
+      },
+      {
+        "asset_id": "002-rippled-box",
+        "method": "constraints",
+        "target_triangles": 864,
+        "achieved_triangles": 864,
+        "target_reached": true,
+        "triangle_reduction": 0.5,
+        "complete": true,
+        "successful_seeds": 2,
+        "worst_seed_direction_p95": 2.4766876549620065e-07,
+        "mean_pooled_error": 7.37441577914301e-08,
+        "normal_p95_degrees": 1.2074182697257333e-06,
+        "feature_statuses": [
+          "measured"
+        ],
+        "feature_p95": 3.94053425015214e-17
+      },
+      {
+        "asset_id": "002-rippled-box",
+        "method": "constraints",
+        "target_triangles": 432,
+        "achieved_triangles": 432,
+        "target_reached": true,
+        "triangle_reduction": 0.75,
+        "complete": true,
+        "successful_seeds": 2,
+        "worst_seed_direction_p95": 0.0008646745001897202,
+        "mean_pooled_error": 0.00017170384092713768,
+        "normal_p95_degrees": 6.461133096928825,
+        "feature_statuses": [
+          "measured"
+        ],
+        "feature_p95": 4.163336342344337e-17
+      },
+      {
+        "asset_id": "002-rippled-box",
+        "method": "feature",
+        "target_triangles": 1296,
+        "achieved_triangles": 1296,
+        "target_reached": true,
+        "triangle_reduction": 0.25,
+        "complete": true,
+        "successful_seeds": 2,
+        "worst_seed_direction_p95": 7.598131190889035e-08,
+        "mean_pooled_error": 3.8563325804119446e-08,
+        "normal_p95_degrees": 1.2074182697257333e-06,
+        "feature_statuses": [
+          "measured"
+        ],
+        "feature_p95": 3.94053425015214e-17
+      },
+      {
+        "asset_id": "002-rippled-box",
+        "method": "feature",
+        "target_triangles": 864,
+        "achieved_triangles": 864,
+        "target_reached": true,
+        "triangle_reduction": 0.5,
+        "complete": true,
+        "successful_seeds": 2,
+        "worst_seed_direction_p95": 2.3915268059226767e-07,
+        "mean_pooled_error": 6.701535091423918e-08,
+        "normal_p95_degrees": 1.2074182697257333e-06,
+        "feature_statuses": [
+          "measured"
+        ],
+        "feature_p95": 3.94053425015214e-17
+      },
+      {
+        "asset_id": "002-rippled-box",
+        "method": "feature",
+        "target_triangles": 432,
+        "achieved_triangles": 432,
+        "target_reached": true,
+        "triangle_reduction": 0.75,
+        "complete": true,
+        "successful_seeds": 2,
+        "worst_seed_direction_p95": 0.0008646745001897202,
+        "mean_pooled_error": 0.00017170384092713768,
+        "normal_p95_degrees": 6.461133096928825,
+        "feature_statuses": [
+          "measured"
+        ],
+        "feature_p95": 4.163336342344337e-17
+      },
+      {
+        "asset_id": "003-original",
+        "method": "standard",
+        "target_triangles": 1536,
+        "achieved_triangles": 1536,
+        "target_reached": true,
+        "triangle_reduction": 0.25,
+        "complete": true,
+        "successful_seeds": 2,
+        "worst_seed_direction_p95": 0.0005800926330266521,
+        "mean_pooled_error": 0.00016319672822249527,
+        "normal_p95_degrees": 5.289896287667868,
+        "feature_statuses": [
+          "not_applicable"
+        ],
+        "feature_p95": null
+      },
+      {
+        "asset_id": "003-original",
+        "method": "standard",
+        "target_triangles": 1024,
+        "achieved_triangles": 1024,
+        "target_reached": true,
+        "triangle_reduction": 0.5,
+        "complete": true,
+        "successful_seeds": 2,
+        "worst_seed_direction_p95": 0.000929967119009233,
+        "mean_pooled_error": 0.00042527161377170616,
+        "normal_p95_degrees": 6.681804429907175,
+        "feature_statuses": [
+          "not_applicable"
+        ],
+        "feature_p95": null
+      },
+      {
+        "asset_id": "003-original",
+        "method": "standard",
+        "target_triangles": 512,
+        "achieved_triangles": 512,
+        "target_reached": true,
+        "triangle_reduction": 0.75,
+        "complete": true,
+        "successful_seeds": 2,
+        "worst_seed_direction_p95": 0.0020326923462562247,
+        "mean_pooled_error": 0.0009106338342308616,
+        "normal_p95_degrees": 8.497435779584515,
+        "feature_statuses": [
+          "not_applicable"
+        ],
+        "feature_p95": null
+      },
+      {
+        "asset_id": "003-original",
+        "method": "constraints",
+        "target_triangles": 1536,
+        "achieved_triangles": 1536,
+        "target_reached": true,
+        "triangle_reduction": 0.25,
+        "complete": true,
+        "successful_seeds": 2,
+        "worst_seed_direction_p95": 0.0005800926330266521,
+        "mean_pooled_error": 0.00016319672822249527,
+        "normal_p95_degrees": 5.289896287667868,
+        "feature_statuses": [
+          "not_applicable"
+        ],
+        "feature_p95": null
+      },
+      {
+        "asset_id": "003-original",
+        "method": "constraints",
+        "target_triangles": 1024,
+        "achieved_triangles": 1024,
+        "target_reached": true,
+        "triangle_reduction": 0.5,
+        "complete": true,
+        "successful_seeds": 2,
+        "worst_seed_direction_p95": 0.000929967119009233,
+        "mean_pooled_error": 0.00042527161377170616,
+        "normal_p95_degrees": 6.681804429907175,
+        "feature_statuses": [
+          "not_applicable"
+        ],
+        "feature_p95": null
+      },
+      {
+        "asset_id": "003-original",
+        "method": "constraints",
+        "target_triangles": 512,
+        "achieved_triangles": 512,
+        "target_reached": true,
+        "triangle_reduction": 0.75,
+        "complete": true,
+        "successful_seeds": 2,
+        "worst_seed_direction_p95": 0.0020326923462562247,
+        "mean_pooled_error": 0.0009106338342308616,
+        "normal_p95_degrees": 8.497435779584515,
+        "feature_statuses": [
+          "not_applicable"
+        ],
+        "feature_p95": null
+      },
+      {
+        "asset_id": "003-original",
+        "method": "feature",
+        "target_triangles": 1536,
+        "achieved_triangles": 1536,
+        "target_reached": true,
+        "triangle_reduction": 0.25,
+        "complete": true,
+        "successful_seeds": 2,
+        "worst_seed_direction_p95": 0.0005800926330266521,
+        "mean_pooled_error": 0.00016319672822249527,
+        "normal_p95_degrees": 5.289896287667868,
+        "feature_statuses": [
+          "not_applicable"
+        ],
+        "feature_p95": null
+      },
+      {
+        "asset_id": "003-original",
+        "method": "feature",
+        "target_triangles": 1024,
+        "achieved_triangles": 1024,
+        "target_reached": true,
+        "triangle_reduction": 0.5,
+        "complete": true,
+        "successful_seeds": 2,
+        "worst_seed_direction_p95": 0.000929967119009233,
+        "mean_pooled_error": 0.00042527161377170616,
+        "normal_p95_degrees": 6.681804429907175,
+        "feature_statuses": [
+          "not_applicable"
+        ],
+        "feature_p95": null
+      },
+      {
+        "asset_id": "003-original",
+        "method": "feature",
+        "target_triangles": 512,
+        "achieved_triangles": 512,
+        "target_reached": true,
+        "triangle_reduction": 0.75,
+        "complete": true,
+        "successful_seeds": 2,
+        "worst_seed_direction_p95": 0.0020326923462562247,
+        "mean_pooled_error": 0.0009106338342308616,
+        "normal_p95_degrees": 8.497435779584515,
+        "feature_statuses": [
+          "not_applicable"
+        ],
+        "feature_p95": null
+      }
+    ]
+  },
+  "curvature_comparison": {
+    "config": {
+      "retain": [
+        0.5,
+        0.25
+      ],
+      "samples_per_direction": 100000,
+      "seeds": [
+        42,
+        43
+      ],
+      "device": "cpu",
+      "max_p95": null,
+      "methods": [
+        "standard",
+        "feature",
+        "curvature",
+        "combined"
+      ],
+      "feature_angle": 45,
+      "feature_weight": 10,
+      "curvature_strength": 4.0,
+      "feature_samples": 2000,
+      "selection_metric": "max_over_seeds_of_worst_direction_p95_normalized"
+    },
+    "points": [
+      {
+        "asset_id": "001-armadillo",
+        "method": "standard",
+        "target_triangles": 43241,
+        "achieved_triangles": 43242,
+        "target_reached": false,
+        "triangle_reduction": 0.49998843690016415,
+        "complete": true,
+        "successful_seeds": 2,
+        "worst_seed_direction_p95": 0.00016282052310998522,
+        "mean_pooled_error": 5.934555583957315e-05,
+        "normal_p95_degrees": 13.905554457725547,
+        "feature_statuses": [
+          "measured"
+        ],
+        "feature_p95": 0.03902730937749119
+      },
+      {
+        "asset_id": "001-armadillo",
+        "method": "standard",
+        "target_triangles": 21620,
+        "achieved_triangles": 21620,
+        "target_reached": true,
+        "triangle_reduction": 0.7500057815499179,
+        "complete": true,
+        "successful_seeds": 2,
+        "worst_seed_direction_p95": 0.0003529550202074455,
+        "mean_pooled_error": 0.00013775485946359678,
+        "normal_p95_degrees": 19.713621797715458,
+        "feature_statuses": [
+          "measured"
+        ],
+        "feature_p95": 0.047224882958469036
+      },
+      {
+        "asset_id": "001-armadillo",
+        "method": "feature",
+        "target_triangles": 43241,
+        "achieved_triangles": 43242,
+        "target_reached": false,
+        "triangle_reduction": 0.49998843690016415,
+        "complete": true,
+        "successful_seeds": 2,
+        "worst_seed_direction_p95": 0.00016621173272142174,
+        "mean_pooled_error": 6.0866228241823556e-05,
+        "normal_p95_degrees": 13.895871968063972,
+        "feature_statuses": [
+          "measured"
+        ],
+        "feature_p95": 0.04274685470261118
+      },
+      {
+        "asset_id": "001-armadillo",
+        "method": "feature",
+        "target_triangles": 21620,
+        "achieved_triangles": 21620,
+        "target_reached": true,
+        "triangle_reduction": 0.7500057815499179,
+        "complete": true,
+        "successful_seeds": 2,
+        "worst_seed_direction_p95": 0.00037610893632518123,
+        "mean_pooled_error": 0.00014616366056670855,
+        "normal_p95_degrees": 19.959546619724676,
+        "feature_statuses": [
+          "measured"
+        ],
+        "feature_p95": 0.047477158220045036
+      },
+      {
+        "asset_id": "001-armadillo",
+        "method": "curvature",
+        "target_triangles": 43241,
+        "achieved_triangles": 43242,
+        "target_reached": false,
+        "triangle_reduction": 0.49998843690016415,
+        "complete": true,
+        "successful_seeds": 2,
+        "worst_seed_direction_p95": 0.00018417026731185613,
+        "mean_pooled_error": 6.577257428757035e-05,
+        "normal_p95_degrees": 13.46922799414329,
+        "feature_statuses": [
+          "measured"
+        ],
+        "feature_p95": 0.03268619143894448
+      },
+      {
+        "asset_id": "001-armadillo",
+        "method": "curvature",
+        "target_triangles": 21620,
+        "achieved_triangles": 21620,
+        "target_reached": true,
+        "triangle_reduction": 0.7500057815499179,
+        "complete": true,
+        "successful_seeds": 2,
+        "worst_seed_direction_p95": 0.000390225763840135,
+        "mean_pooled_error": 0.0001512712892906282,
+        "normal_p95_degrees": 19.333456704994845,
+        "feature_statuses": [
+          "measured"
+        ],
+        "feature_p95": 0.04795243961224986
+      },
+      {
+        "asset_id": "001-armadillo",
+        "method": "combined",
+        "target_triangles": 43241,
+        "achieved_triangles": 43242,
+        "target_reached": false,
+        "triangle_reduction": 0.49998843690016415,
+        "complete": true,
+        "successful_seeds": 2,
+        "worst_seed_direction_p95": 0.00018694863101700312,
+        "mean_pooled_error": 6.687898702016809e-05,
+        "normal_p95_degrees": 13.524257770734698,
+        "feature_statuses": [
+          "measured"
+        ],
+        "feature_p95": 0.03210204738982289
+      },
+      {
+        "asset_id": "001-armadillo",
+        "method": "combined",
+        "target_triangles": 21620,
+        "achieved_triangles": 21620,
+        "target_reached": true,
+        "triangle_reduction": 0.7500057815499179,
+        "complete": true,
+        "successful_seeds": 2,
+        "worst_seed_direction_p95": 0.00041652436484582715,
+        "mean_pooled_error": 0.00015995349249025746,
+        "normal_p95_degrees": 19.50669894520136,
+        "feature_statuses": [
+          "measured"
+        ],
+        "feature_p95": 0.04690817268562687
+      },
+      {
+        "asset_id": "002-rippled-box",
+        "method": "standard",
+        "target_triangles": 864,
+        "achieved_triangles": 864,
+        "target_reached": true,
+        "triangle_reduction": 0.5,
+        "complete": true,
+        "successful_seeds": 2,
+        "worst_seed_direction_p95": 1.6726511375964037e-07,
+        "mean_pooled_error": 3.8504227624465844e-08,
+        "normal_p95_degrees": 1.2074182697257333e-06,
+        "feature_statuses": [
+          "measured"
+        ],
+        "feature_p95": 8.477173730431571e-17
+      },
+      {
+        "asset_id": "002-rippled-box",
+        "method": "standard",
+        "target_triangles": 432,
+        "achieved_triangles": 432,
+        "target_reached": true,
+        "triangle_reduction": 0.75,
+        "complete": true,
+        "successful_seeds": 2,
+        "worst_seed_direction_p95": 0.000782253546640276,
+        "mean_pooled_error": 0.0001485259641993626,
+        "normal_p95_degrees": 5.291030248094062,
+        "feature_statuses": [
+          "measured"
+        ],
+        "feature_p95": 0.0005251484927480549
+      },
+      {
+        "asset_id": "002-rippled-box",
+        "method": "feature",
+        "target_triangles": 864,
+        "achieved_triangles": 864,
+        "target_reached": true,
+        "triangle_reduction": 0.5,
+        "complete": true,
+        "successful_seeds": 2,
+        "worst_seed_direction_p95": 2.3915268059226767e-07,
+        "mean_pooled_error": 6.701535091423918e-08,
+        "normal_p95_degrees": 1.2074182697257333e-06,
+        "feature_statuses": [
+          "measured"
+        ],
+        "feature_p95": 3.94053425015214e-17
+      },
+      {
+        "asset_id": "002-rippled-box",
+        "method": "feature",
+        "target_triangles": 432,
+        "achieved_triangles": 432,
+        "target_reached": true,
+        "triangle_reduction": 0.75,
+        "complete": true,
+        "successful_seeds": 2,
+        "worst_seed_direction_p95": 0.0008646745001897202,
+        "mean_pooled_error": 0.00017170384092713768,
+        "normal_p95_degrees": 6.461133096928825,
+        "feature_statuses": [
+          "measured"
+        ],
+        "feature_p95": 4.163336342344337e-17
+      },
+      {
+        "asset_id": "002-rippled-box",
+        "method": "curvature",
+        "target_triangles": 864,
+        "achieved_triangles": 864,
+        "target_reached": true,
+        "triangle_reduction": 0.5,
+        "complete": true,
+        "successful_seeds": 2,
+        "worst_seed_direction_p95": 2.07013542308232e-07,
+        "mean_pooled_error": 7.426512219560053e-08,
+        "normal_p95_degrees": 1.2074182697257333e-06,
+        "feature_statuses": [
+          "measured"
+        ],
+        "feature_p95": 6.710584155509423e-17
+      },
+      {
+        "asset_id": "002-rippled-box",
+        "method": "curvature",
+        "target_triangles": 432,
+        "achieved_triangles": 432,
+        "target_reached": true,
+        "triangle_reduction": 0.75,
+        "complete": true,
+        "successful_seeds": 2,
+        "worst_seed_direction_p95": 0.0008135860232869157,
+        "mean_pooled_error": 0.00015506337770852195,
+        "normal_p95_degrees": 6.010358425992147,
+        "feature_statuses": [
+          "measured"
+        ],
+        "feature_p95": 0.00022598940034861213
+      },
+      {
+        "asset_id": "002-rippled-box",
+        "method": "combined",
+        "target_triangles": 864,
+        "achieved_triangles": 864,
+        "target_reached": true,
+        "triangle_reduction": 0.5,
+        "complete": true,
+        "successful_seeds": 2,
+        "worst_seed_direction_p95": 4.554615031793219e-07,
+        "mean_pooled_error": 8.199384011892664e-08,
+        "normal_p95_degrees": 1.2074182697257333e-06,
+        "feature_statuses": [
+          "measured"
+        ],
+        "feature_p95": 3.94053425015214e-17
+      },
+      {
+        "asset_id": "002-rippled-box",
+        "method": "combined",
+        "target_triangles": 432,
+        "achieved_triangles": 432,
+        "target_reached": true,
+        "triangle_reduction": 0.75,
+        "complete": true,
+        "successful_seeds": 2,
+        "worst_seed_direction_p95": 0.0008837618603138248,
+        "mean_pooled_error": 0.0001736597276386016,
+        "normal_p95_degrees": 6.210635504430894,
+        "feature_statuses": [
+          "measured"
+        ],
+        "feature_p95": 4.163336342344337e-17
+      },
+      {
+        "asset_id": "003-bumped-sphere",
+        "method": "standard",
+        "target_triangles": 1024,
+        "achieved_triangles": 1024,
+        "target_reached": true,
+        "triangle_reduction": 0.5,
+        "complete": true,
+        "successful_seeds": 2,
+        "worst_seed_direction_p95": 0.0008614901598775759,
+        "mean_pooled_error": 0.00038611281490020524,
+        "normal_p95_degrees": 6.72609130524103,
+        "feature_statuses": [
+          "not_applicable"
+        ],
+        "feature_p95": null
+      },
+      {
+        "asset_id": "003-bumped-sphere",
+        "method": "standard",
+        "target_triangles": 512,
+        "achieved_triangles": 512,
+        "target_reached": true,
+        "triangle_reduction": 0.75,
+        "complete": true,
+        "successful_seeds": 2,
+        "worst_seed_direction_p95": 0.0018955593812279403,
+        "mean_pooled_error": 0.0008313622390500332,
+        "normal_p95_degrees": 9.018760102947477,
+        "feature_statuses": [
+          "not_applicable"
+        ],
+        "feature_p95": null
+      },
+      {
+        "asset_id": "003-bumped-sphere",
+        "method": "feature",
+        "target_triangles": 1024,
+        "achieved_triangles": 1024,
+        "target_reached": true,
+        "triangle_reduction": 0.5,
+        "complete": true,
+        "successful_seeds": 2,
+        "worst_seed_direction_p95": 0.0008614901598775759,
+        "mean_pooled_error": 0.00038611281490020524,
+        "normal_p95_degrees": 6.72609130524103,
+        "feature_statuses": [
+          "not_applicable"
+        ],
+        "feature_p95": null
+      },
+      {
+        "asset_id": "003-bumped-sphere",
+        "method": "feature",
+        "target_triangles": 512,
+        "achieved_triangles": 512,
+        "target_reached": true,
+        "triangle_reduction": 0.75,
+        "complete": true,
+        "successful_seeds": 2,
+        "worst_seed_direction_p95": 0.0018955593812279403,
+        "mean_pooled_error": 0.0008313622390500332,
+        "normal_p95_degrees": 9.018760102947477,
+        "feature_statuses": [
+          "not_applicable"
+        ],
+        "feature_p95": null
+      },
+      {
+        "asset_id": "003-bumped-sphere",
+        "method": "curvature",
+        "target_triangles": 1024,
+        "achieved_triangles": 1024,
+        "target_reached": true,
+        "triangle_reduction": 0.5,
+        "complete": true,
+        "successful_seeds": 2,
+        "worst_seed_direction_p95": 0.0008919073647120967,
+        "mean_pooled_error": 0.00038618802708367415,
+        "normal_p95_degrees": 6.950150876992595,
+        "feature_statuses": [
+          "not_applicable"
+        ],
+        "feature_p95": null
+      },
+      {
+        "asset_id": "003-bumped-sphere",
+        "method": "curvature",
+        "target_triangles": 512,
+        "achieved_triangles": 512,
+        "target_reached": true,
+        "triangle_reduction": 0.75,
+        "complete": true,
+        "successful_seeds": 2,
+        "worst_seed_direction_p95": 0.0020789414877071958,
+        "mean_pooled_error": 0.0008689512216548442,
+        "normal_p95_degrees": 8.861108109128619,
+        "feature_statuses": [
+          "not_applicable"
+        ],
+        "feature_p95": null
+      },
+      {
+        "asset_id": "003-bumped-sphere",
+        "method": "combined",
+        "target_triangles": 1024,
+        "achieved_triangles": 1024,
+        "target_reached": true,
+        "triangle_reduction": 0.5,
+        "complete": true,
+        "successful_seeds": 2,
+        "worst_seed_direction_p95": 0.0008919073647120967,
+        "mean_pooled_error": 0.00038618802708367415,
+        "normal_p95_degrees": 6.950150876992595,
+        "feature_statuses": [
+          "not_applicable"
+        ],
+        "feature_p95": null
+      },
+      {
+        "asset_id": "003-bumped-sphere",
+        "method": "combined",
+        "target_triangles": 512,
+        "achieved_triangles": 512,
+        "target_reached": true,
+        "triangle_reduction": 0.75,
+        "complete": true,
+        "successful_seeds": 2,
+        "worst_seed_direction_p95": 0.0020789414877071958,
+        "mean_pooled_error": 0.0008689512216548442,
+        "normal_p95_degrees": 8.861108109128619,
+        "feature_statuses": [
+          "not_applicable"
+        ],
+        "feature_p95": null
+      }
+    ]
+  },
+  "boundary_comparison": {
+    "config": {
+      "retain": [
+        0.5,
+        0.25
+      ],
+      "samples_per_direction": 100000,
+      "seeds": [
+        42,
+        43
+      ],
+      "device": "cpu",
+      "max_p95": null,
+      "methods": [
+        "standard",
+        "boundary"
+      ],
+      "feature_angle": 45,
+      "feature_weight": 10,
+      "curvature_strength": 4,
+      "feature_samples": 2000,
+      "selection_metric": "max_over_seeds_of_worst_direction_p95_normalized"
+    },
+    "points": [
+      {
+        "asset_id": "001-open-plane",
+        "method": "standard",
+        "target_triangles": 121,
+        "achieved_triangles": 122,
+        "target_reached": false,
+        "triangle_reduction": 0.49586776859504134,
+        "complete": true,
+        "successful_seeds": 2,
+        "worst_seed_direction_p95": 8.867500781661829e-07,
+        "mean_pooled_error": 9.568020161290214e-08,
+        "normal_p95_degrees": 0.0,
+        "feature_statuses": [
+          "not_applicable"
+        ],
+        "feature_p95": null,
+        "boundary_statuses": [
+          "measured"
+        ],
+        "boundary_p95": 5.553824967135427e-17
+      },
+      {
+        "asset_id": "001-open-plane",
+        "method": "standard",
+        "target_triangles": 60,
+        "achieved_triangles": 60,
+        "target_reached": true,
+        "triangle_reduction": 0.7520661157024793,
+        "complete": true,
+        "successful_seeds": 2,
+        "worst_seed_direction_p95": 1.5489297993553893e-06,
+        "mean_pooled_error": 1.9647920109932047e-07,
+        "normal_p95_degrees": 0.0,
+        "feature_statuses": [
+          "not_applicable"
+        ],
+        "feature_p95": null,
+        "boundary_statuses": [
+          "measured"
+        ],
+        "boundary_p95": 5.553824967135427e-17
+      },
+      {
+        "asset_id": "001-open-plane",
+        "method": "boundary",
+        "target_triangles": 121,
+        "achieved_triangles": 121,
+        "target_reached": true,
+        "triangle_reduction": 0.5,
+        "complete": true,
+        "successful_seeds": 2,
+        "worst_seed_direction_p95": 8.867500781661829e-07,
+        "mean_pooled_error": 9.568269935350316e-08,
+        "normal_p95_degrees": 0.0,
+        "feature_statuses": [
+          "not_applicable"
+        ],
+        "feature_p95": null,
+        "boundary_statuses": [
+          "measured"
+        ],
+        "boundary_p95": 5.553824967135427e-17
+      },
+      {
+        "asset_id": "001-open-plane",
+        "method": "boundary",
+        "target_triangles": 60,
+        "achieved_triangles": 60,
+        "target_reached": true,
+        "triangle_reduction": 0.7520661157024793,
+        "complete": true,
+        "successful_seeds": 2,
+        "worst_seed_direction_p95": 1.5489297993553893e-06,
+        "mean_pooled_error": 1.9647920109932047e-07,
+        "normal_p95_degrees": 0.0,
+        "feature_statuses": [
+          "not_applicable"
+        ],
+        "feature_p95": null,
+        "boundary_statuses": [
+          "measured"
+        ],
+        "boundary_p95": 5.553824967135427e-17
+      },
+      {
+        "asset_id": "002-open-hole",
+        "method": "standard",
+        "target_triangles": 105,
+        "achieved_triangles": 106,
+        "target_reached": false,
+        "triangle_reduction": 0.49523809523809526,
+        "complete": true,
+        "successful_seeds": 2,
+        "worst_seed_direction_p95": 8.978366992096155e-07,
+        "mean_pooled_error": 1.0615005546930289e-07,
+        "normal_p95_degrees": 0.0,
+        "feature_statuses": [
+          "not_applicable"
+        ],
+        "feature_p95": null,
+        "boundary_statuses": [
+          "measured"
+        ],
+        "boundary_p95": 5.551115123125783e-17
+      },
+      {
+        "asset_id": "002-open-hole",
+        "method": "standard",
+        "target_triangles": 52,
+        "achieved_triangles": 68,
+        "target_reached": false,
+        "triangle_reduction": 0.6761904761904762,
+        "complete": true,
+        "successful_seeds": 2,
+        "worst_seed_direction_p95": 8.34997024412587e-07,
+        "mean_pooled_error": 9.741328076656508e-08,
+        "normal_p95_degrees": 0.0,
+        "feature_statuses": [
+          "not_applicable"
+        ],
+        "feature_p95": null,
+        "boundary_statuses": [
+          "measured"
+        ],
+        "boundary_p95": 5.551115123125783e-17
+      },
+      {
+        "asset_id": "002-open-hole",
+        "method": "boundary",
+        "target_triangles": 105,
+        "achieved_triangles": 105,
+        "target_reached": true,
+        "triangle_reduction": 0.5,
+        "complete": true,
+        "successful_seeds": 2,
+        "worst_seed_direction_p95": 8.926293133981735e-07,
+        "mean_pooled_error": 1.0431095791529011e-07,
+        "normal_p95_degrees": 0.0,
+        "feature_statuses": [
+          "not_applicable"
+        ],
+        "feature_p95": null,
+        "boundary_statuses": [
+          "measured"
+        ],
+        "boundary_p95": 5.551115123125783e-17
+      },
+      {
+        "asset_id": "002-open-hole",
+        "method": "boundary",
+        "target_triangles": 52,
+        "achieved_triangles": 52,
+        "target_reached": true,
+        "triangle_reduction": 0.7523809523809524,
+        "complete": true,
+        "successful_seeds": 2,
+        "worst_seed_direction_p95": 6.795975195927895e-07,
+        "mean_pooled_error": 7.562585488017691e-08,
+        "normal_p95_degrees": 0.0,
+        "feature_statuses": [
+          "not_applicable"
+        ],
+        "feature_p95": null,
+        "boundary_statuses": [
+          "measured"
+        ],
+        "boundary_p95": 5.551115123125783e-17
+      },
+      {
+        "asset_id": "003-open-strip",
+        "method": "standard",
+        "target_triangles": 11,
+        "achieved_triangles": 22,
+        "target_reached": false,
+        "triangle_reduction": 0,
+        "complete": true,
+        "successful_seeds": 2,
+        "worst_seed_direction_p95": 3.003425064207477e-08,
+        "mean_pooled_error": 7.633420780776764e-09,
+        "normal_p95_degrees": 0.0,
+        "feature_statuses": [
+          "not_applicable"
+        ],
+        "feature_p95": null,
+        "boundary_statuses": [
+          "measured"
+        ],
+        "boundary_p95": 1.3877787807814457e-17
+      },
+      {
+        "asset_id": "003-open-strip",
+        "method": "standard",
+        "target_triangles": 5,
+        "achieved_triangles": 22,
+        "target_reached": false,
+        "triangle_reduction": 0,
+        "complete": true,
+        "successful_seeds": 2,
+        "worst_seed_direction_p95": 3.003425064207477e-08,
+        "mean_pooled_error": 7.633420780776764e-09,
+        "normal_p95_degrees": 0.0,
+        "feature_statuses": [
+          "not_applicable"
+        ],
+        "feature_p95": null,
+        "boundary_statuses": [
+          "measured"
+        ],
+        "boundary_p95": 1.3877787807814457e-17
+      },
+      {
+        "asset_id": "003-open-strip",
+        "method": "boundary",
+        "target_triangles": 11,
+        "achieved_triangles": 11,
+        "target_reached": true,
+        "triangle_reduction": 0.5,
+        "complete": true,
+        "successful_seeds": 2,
+        "worst_seed_direction_p95": 1.2555897728816458e-05,
+        "mean_pooled_error": 1.1807642427082626e-06,
+        "normal_p95_degrees": 0.0,
+        "feature_statuses": [
+          "not_applicable"
+        ],
+        "feature_p95": null,
+        "boundary_statuses": [
+          "measured"
+        ],
+        "boundary_p95": 1.1102230246251565e-16
+      },
+      {
+        "asset_id": "003-open-strip",
+        "method": "boundary",
+        "target_triangles": 5,
+        "achieved_triangles": 5,
+        "target_reached": true,
+        "triangle_reduction": 0.7727272727272727,
+        "complete": true,
+        "successful_seeds": 2,
+        "worst_seed_direction_p95": 1.0941782988993494e-06,
+        "mean_pooled_error": 5.955885548253824e-07,
+        "normal_p95_degrees": 0.0,
+        "feature_statuses": [
+          "not_applicable"
+        ],
+        "feature_p95": null,
+        "boundary_statuses": [
+          "measured"
+        ],
+        "boundary_p95": 1.1102230246251565e-16
+      },
+      {
+        "asset_id": "004-open-curved",
+        "method": "standard",
+        "target_triangles": 121,
+        "achieved_triangles": 122,
+        "target_reached": false,
+        "triangle_reduction": 0.49586776859504134,
+        "complete": true,
+        "successful_seeds": 2,
+        "worst_seed_direction_p95": 0.0008215436100726947,
+        "mean_pooled_error": 0.0003047543174167594,
+        "normal_p95_degrees": 3.5972061386724192,
+        "feature_statuses": [
+          "not_applicable"
+        ],
+        "feature_p95": null,
+        "boundary_statuses": [
+          "measured"
+        ],
+        "boundary_p95": 5.555009446383485e-17
+      },
+      {
+        "asset_id": "004-open-curved",
+        "method": "standard",
+        "target_triangles": 60,
+        "achieved_triangles": 60,
+        "target_reached": true,
+        "triangle_reduction": 0.7520661157024793,
+        "complete": true,
+        "successful_seeds": 2,
+        "worst_seed_direction_p95": 0.002209516370203344,
+        "mean_pooled_error": 0.0008591576797975078,
+        "normal_p95_degrees": 5.441019437738017,
+        "feature_statuses": [
+          "not_applicable"
+        ],
+        "feature_p95": null,
+        "boundary_statuses": [
+          "measured"
+        ],
+        "boundary_p95": 5.555009446383485e-17
+      },
+      {
+        "asset_id": "004-open-curved",
+        "method": "boundary",
+        "target_triangles": 121,
+        "achieved_triangles": 121,
+        "target_reached": true,
+        "triangle_reduction": 0.5,
+        "complete": true,
+        "successful_seeds": 2,
+        "worst_seed_direction_p95": 0.0008851898048305883,
+        "mean_pooled_error": 0.0003208338544222904,
+        "normal_p95_degrees": 3.6306746295683743,
+        "feature_statuses": [
+          "not_applicable"
+        ],
+        "feature_p95": null,
+        "boundary_statuses": [
+          "measured"
+        ],
+        "boundary_p95": 0.001486315862987819
+      },
+      {
+        "asset_id": "004-open-curved",
+        "method": "boundary",
+        "target_triangles": 60,
+        "achieved_triangles": 60,
+        "target_reached": true,
+        "triangle_reduction": 0.7520661157024793,
+        "complete": true,
+        "successful_seeds": 2,
+        "worst_seed_direction_p95": 0.0015171131410170325,
+        "mean_pooled_error": 0.0005814232297065876,
+        "normal_p95_degrees": 4.486694140988554,
+        "feature_statuses": [
+          "not_applicable"
+        ],
+        "feature_p95": null,
+        "boundary_statuses": [
+          "measured"
+        ],
+        "boundary_p95": 0.0017807783207280155
+      }
+    ]
+  },
+  "performance": {
+    "config": {
+      "retain": [
+        0.25
+      ],
+      "methods": [
+        "standard"
+      ],
+      "variants": [
+        "tree",
+        "sorted"
+      ],
+      "repeats": 5,
+      "warmups": 1,
+      "timeout": 300,
+      "build_label": "Apple clang, C++17, -O2 -Wall -Wextra -Wpedantic -Werror; direct build"
+    },
+    "environment": {
+      "platform": "macOS-15.1-arm64-arm-64bit-Mach-O",
+      "machine": "arm64",
+      "processor": "arm",
+      "logical_cpus": 11,
+      "python": "3.13.1"
+    },
+    "binary_sha256": "857aad1cfb9e5cc1edff9132044b306780b156fe0cc8dfe5268a3c6a6603f1be",
+    "summaries": [
+      {
+        "asset_id": "001-bumped-sphere-L3",
+        "method": "standard",
+        "target": 128,
+        "variant": "tree",
+        "original_triangles": 512,
+        "achieved_triangles": 128,
+        "trials": 5,
+        "optimizer_seconds": {
+          "median": 0.005893208,
+          "min": 0.005847792,
+          "max": 0.005916042,
+          "p25": 0.005881875,
+          "p75": 0.005899375,
+          "iqr": 1.7500000000000154e-05
+        },
+        "process_wall_seconds": {
+          "median": 0.01575033413246274,
+          "min": 0.015241499990224838,
+          "max": 0.01654495787806809,
+          "p25": 0.015347209060564637,
+          "p75": 0.016227666987106204,
+          "iqr": 0.0008804579265415668
+        },
+        "peak_process_rss_bytes": {
+          "median": 1933312,
+          "min": 1933312,
+          "max": 1933312,
+          "p25": 1933312.0,
+          "p75": 1933312.0,
+          "iqr": 0.0
+        },
+        "mesh_sha256": "92d7923ee71bb85ce6785f9be413ba34e854316413f5417bc56d28a3e98ea94c"
+      },
+      {
+        "asset_id": "001-bumped-sphere-L3",
+        "method": "standard",
+        "target": 128,
+        "variant": "sorted",
+        "original_triangles": 512,
+        "achieved_triangles": 128,
+        "trials": 5,
+        "optimizer_seconds": {
+          "median": 0.005186709,
+          "min": 0.005157875,
+          "max": 0.0052145,
+          "p25": 0.00516925,
+          "p75": 0.005202125,
+          "iqr": 3.287499999999992e-05
+        },
+        "process_wall_seconds": {
+          "median": 0.014465583954006433,
+          "min": 0.013520041946321726,
+          "max": 0.015714040957391262,
+          "p25": 0.013549375114962459,
+          "p75": 0.014785832958295941,
+          "iqr": 0.0012364578433334827
+        },
+        "peak_process_rss_bytes": {
+          "median": 1933312,
+          "min": 1933312,
+          "max": 1933312,
+          "p25": 1933312.0,
+          "p75": 1933312.0,
+          "iqr": 0.0
+        },
+        "mesh_sha256": "92d7923ee71bb85ce6785f9be413ba34e854316413f5417bc56d28a3e98ea94c"
+      },
+      {
+        "asset_id": "002-bumped-sphere-L4",
+        "method": "standard",
+        "target": 512,
+        "variant": "tree",
+        "original_triangles": 2048,
+        "achieved_triangles": 512,
+        "trials": 5,
+        "optimizer_seconds": {
+          "median": 0.023326333,
+          "min": 0.023045833,
+          "max": 0.023651791,
+          "p25": 0.023295333,
+          "p75": 0.023545708,
+          "iqr": 0.00025037499999999713
+        },
+        "process_wall_seconds": {
+          "median": 0.03223670809529722,
+          "min": 0.03212091699242592,
+          "max": 0.03251358401030302,
+          "p25": 0.03215120895765722,
+          "p75": 0.03249125019647181,
+          "iqr": 0.00034004123881459236
+        },
+        "peak_process_rss_bytes": {
+          "median": 4227072,
+          "min": 4046848,
+          "max": 4423680,
+          "p25": 4177920.0,
+          "p75": 4374528.0,
+          "iqr": 196608.0
+        },
+        "mesh_sha256": "bd370a23f6d90131d4497aa58319b2654fa8b841512150fcd221dc0d03e690a7"
+      },
+      {
+        "asset_id": "002-bumped-sphere-L4",
+        "method": "standard",
+        "target": 512,
+        "variant": "sorted",
+        "original_triangles": 2048,
+        "achieved_triangles": 512,
+        "trials": 5,
+        "optimizer_seconds": {
+          "median": 0.020841584,
+          "min": 0.020570166,
+          "max": 0.02172875,
+          "p25": 0.020695209,
+          "p75": 0.021277459,
+          "iqr": 0.0005822499999999994
+        },
+        "process_wall_seconds": {
+          "median": 0.030213333200663328,
+          "min": 0.029342791996896267,
+          "max": 0.030757375061511993,
+          "p25": 0.029970292001962662,
+          "p75": 0.030313292052596807,
+          "iqr": 0.00034300005063414574
+        },
+        "peak_process_rss_bytes": {
+          "median": 4112384,
+          "min": 4046848,
+          "max": 4669440,
+          "p25": 4046848.0,
+          "p75": 4390912.0,
+          "iqr": 344064.0
+        },
+        "mesh_sha256": "bd370a23f6d90131d4497aa58319b2654fa8b841512150fcd221dc0d03e690a7"
+      },
+      {
+        "asset_id": "003-bumped-sphere-L5",
+        "method": "standard",
+        "target": 2048,
+        "variant": "tree",
+        "original_triangles": 8192,
+        "achieved_triangles": 2048,
+        "trials": 5,
+        "optimizer_seconds": {
+          "median": 0.095315709,
+          "min": 0.093738041,
+          "max": 0.101094167,
+          "p25": 0.095133334,
+          "p75": 0.099713125,
+          "iqr": 0.004579791
+        },
+        "process_wall_seconds": {
+          "median": 0.11252866708673537,
+          "min": 0.11163987498730421,
+          "max": 0.12253308319486678,
+          "p25": 0.11210658284835517,
+          "p75": 0.11888095806352794,
+          "iqr": 0.006774375215172768
+        },
+        "peak_process_rss_bytes": {
+          "median": 13516800,
+          "min": 12681216,
+          "max": 14123008,
+          "p25": 13189120.0,
+          "p75": 13991936.0,
+          "iqr": 802816.0
+        },
+        "mesh_sha256": "0ac845b53118b88131784854f51be480ed2b74fd077ad85300e576c7511c65d6"
+      },
+      {
+        "asset_id": "003-bumped-sphere-L5",
+        "method": "standard",
+        "target": 2048,
+        "variant": "sorted",
+        "original_triangles": 8192,
+        "achieved_triangles": 2048,
+        "trials": 5,
+        "optimizer_seconds": {
+          "median": 0.08662525,
+          "min": 0.085276834,
+          "max": 0.093128042,
+          "p25": 0.086029125,
+          "p75": 0.087080458,
+          "iqr": 0.0010513330000000015
+        },
+        "process_wall_seconds": {
+          "median": 0.10462983301840723,
+          "min": 0.10241329204291105,
+          "max": 0.11067699990235269,
+          "p25": 0.10435262508690357,
+          "p75": 0.105029416969046,
+          "iqr": 0.0006767918821424246
+        },
+        "peak_process_rss_bytes": {
+          "median": 13959168,
+          "min": 12959744,
+          "max": 14303232,
+          "p25": 13402112.0,
+          "p75": 14090240.0,
+          "iqr": 688128.0
+        },
+        "mesh_sha256": "0ac845b53118b88131784854f51be480ed2b74fd077ad85300e576c7511c65d6"
+      },
+      {
+        "asset_id": "004-bumped-sphere-L6",
+        "method": "standard",
+        "target": 8192,
+        "variant": "tree",
+        "original_triangles": 32768,
+        "achieved_triangles": 8192,
+        "trials": 5,
+        "optimizer_seconds": {
+          "median": 0.432137916,
+          "min": 0.404793709,
+          "max": 0.808385,
+          "p25": 0.412215042,
+          "p75": 0.441155417,
+          "iqr": 0.028940375000000018
+        },
+        "process_wall_seconds": {
+          "median": 0.48326299991458654,
+          "min": 0.45600850018672645,
+          "max": 0.8597814170643687,
+          "p25": 0.46353924996219575,
+          "p75": 0.4936349580530077,
+          "iqr": 0.030095708090811968
+        },
+        "peak_process_rss_bytes": {
+          "median": 49430528,
+          "min": 49283072,
+          "max": 49676288,
+          "p25": 49315840.0,
+          "p75": 49446912.0,
+          "iqr": 131072.0
+        },
+        "mesh_sha256": "df7e9c374326bffb4f2d4a3a0205095d71cff955d42a185b166ca15d155d7c9e"
+      },
+      {
+        "asset_id": "004-bumped-sphere-L6",
+        "method": "standard",
+        "target": 8192,
+        "variant": "sorted",
+        "original_triangles": 32768,
+        "achieved_triangles": 8192,
+        "trials": 5,
+        "optimizer_seconds": {
+          "median": 0.387484125,
+          "min": 0.374098875,
+          "max": 0.433236208,
+          "p25": 0.37469425,
+          "p75": 0.432705916,
+          "iqr": 0.05801166600000002
+        },
+        "process_wall_seconds": {
+          "median": 0.4409796248655766,
+          "min": 0.4249030000064522,
+          "max": 0.4882738748565316,
+          "p25": 0.4293188750743866,
+          "p75": 0.48764095781371,
+          "iqr": 0.05832208273932338
+        },
+        "peak_process_rss_bytes": {
+          "median": 48627712,
+          "min": 46383104,
+          "max": 49905664,
+          "p25": 48136192.0,
+          "p75": 49152000.0,
+          "iqr": 1015808.0
+        },
+        "mesh_sha256": "df7e9c374326bffb4f2d4a3a0205095d71cff955d42a185b166ca15d155d7c9e"
+      },
+      {
+        "asset_id": "005-armadillo",
+        "method": "standard",
+        "target": 21620,
+        "variant": "tree",
+        "original_triangles": 86482,
+        "achieved_triangles": 21620,
+        "trials": 5,
+        "optimizer_seconds": {
+          "median": 2.383592792,
+          "min": 1.879097792,
+          "max": 3.942647042,
+          "p25": 2.1579545,
+          "p75": 2.542017625,
+          "iqr": 0.38406312499999995
+        },
+        "process_wall_seconds": {
+          "median": 2.513678167015314,
+          "min": 2.0080606669653207,
+          "max": 4.0765080829150975,
+          "p25": 2.302650624886155,
+          "p75": 2.739006540970877,
+          "iqr": 0.4363559160847217
+        },
+        "peak_process_rss_bytes": {
+          "median": 144736256,
+          "min": 126042112,
+          "max": 150224896,
+          "p25": 143704064.0,
+          "p75": 149831680.0,
+          "iqr": 6127616.0
+        },
+        "mesh_sha256": "402a382e2909552b829a927537848ceedfb21774e477da86b9d4e3dd6d458313"
+      },
+      {
+        "asset_id": "005-armadillo",
+        "method": "standard",
+        "target": 21620,
+        "variant": "sorted",
+        "original_triangles": 86482,
+        "achieved_triangles": 21620,
+        "trials": 5,
+        "optimizer_seconds": {
+          "median": 2.102676125,
+          "min": 1.791050208,
+          "max": 3.790073458,
+          "p25": 1.953636042,
+          "p75": 2.720466458,
+          "iqr": 0.7668304160000001
+        },
+        "process_wall_seconds": {
+          "median": 2.235067332861945,
+          "min": 1.9222226249985397,
+          "max": 3.9754185420461,
+          "p25": 2.092069916194305,
+          "p75": 2.849936875049025,
+          "iqr": 0.75786695885472
+        },
+        "peak_process_rss_bytes": {
+          "median": 144261120,
+          "min": 123961344,
+          "max": 153059328,
+          "p25": 125894656.0,
+          "p75": 151896064.0,
+          "iqr": 26001408.0
+        },
+        "mesh_sha256": "402a382e2909552b829a927537848ceedfb21774e477da86b9d4e3dd6d458313"
+      }
+    ],
+    "comparisons": [
+      {
+        "asset_id": "001-bumped-sphere-L3",
+        "method": "standard",
+        "target": 128,
+        "identical_geometry": true,
+        "median_time_ratio": 1.136213348387195
+      },
+      {
+        "asset_id": "002-bumped-sphere-L4",
+        "method": "standard",
+        "target": 512,
+        "identical_geometry": true,
+        "median_time_ratio": 1.1192207367731744
+      },
+      {
+        "asset_id": "003-bumped-sphere-L5",
+        "method": "standard",
+        "target": 2048,
+        "identical_geometry": true,
+        "median_time_ratio": 1.1003224694878224
+      },
+      {
+        "asset_id": "004-bumped-sphere-L6",
+        "method": "standard",
+        "target": 8192,
+        "identical_geometry": true,
+        "median_time_ratio": 1.1152403108127333
+      },
+      {
+        "asset_id": "005-armadillo",
+        "method": "standard",
+        "target": 21620,
+        "identical_geometry": true,
+        "median_time_ratio": 1.1335995894279725
+      }
+    ]
+  }
+}
