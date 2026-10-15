@@ -1,0 +1,20 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "assetq"
+version = "0.1.0"
+description = "3D mesh inspection and optimization experiments"
+requires-python = ">=3.10"
+dependencies = []
+
+[project.optional-dependencies]
+evaluation = ["numpy>=1.24", "warp-lang>=1.10,<2"]
+benchmark = ["numpy>=1.24", "warp-lang>=1.10,<2", "matplotlib>=3.8,<4"]
+
+[project.scripts]
+assetq = "assetq.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["python"]

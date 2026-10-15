@@ -1,0 +1,11 @@
+# Three faces share edge 1-2; one duplicate and one degenerate.
+v 0 0 0
+v 1 0 0
+v 0 1 0
+v 0 -1 0
+v 2 0 0
+v 9 9 9
+f 1 2 3
+f 2 1 4
+f 1 2 3
+f 1 2 5
